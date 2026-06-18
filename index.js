@@ -1,0 +1,287 @@
+const express = require('express');
+const http = require('http');
+const path = require('path');
+const fs = require('fs');
+const { WebSocketServer } = require('ws');
+const { default: open } = require('open');
+const pythonBridge = require('./src/server/python-bridge');
+const { streamChat } = require('./src/server/llm');
+
+let execCounter = 0;
+let agentCellCounter = 0;
+let notebookCells = [];
+
+function startServer(port) {
+    const app = express();
+    const server = http.createServer(app);
+
+    app.use(express.static(path.join(__dirname, 'public')));
+
+    const wss = new WebSocketServer({ server });
+
+    pythonBridge.start();
+
+    function handleFsList(ws, msg) {
+        const requested = msg.path || '.';
+        const resolved = path.resolve(process.cwd(), requested);
+        if (!resolved.startsWith(process.cwd())) {
+            ws.send(JSON.stringify({ type: 'fs:list', path: requested, files: [] }));
+            return;
+        }
+        try {
+            const entries = fs.readdirSync(resolved, { withFileTypes: true });
+            const files = entries
+                .filter(e => !e.name.startsWith('.'))
+                .map(e => ({
+                    name: e.name,
+                    isDir: e.isDirectory(),
+                    size: e.isFile() ? fs.statSync(path.join(resolved, e.name)).size : 0,
+                }))
+                .sort((a, b) => {
+                    if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
+                    return a.name.localeCompare(b.name);
+                });
+            ws.send(JSON.stringify({ type: 'fs:list', path: requested, files }));
+        } catch {
+            ws.send(JSON.stringify({ type: 'fs:list', path: requested, files: [] }));
+        }
+    }
+
+    async function handleCellExecute(ws, msg) {
+        execCounter++;
+        const cellId = msg.cellId;
+        const code = msg.code || '';
+
+        try {
+            const result = await pythonBridge.execute(code);
+            ws.send(JSON.stringify({
+                type: 'cell:output',
+                cellId,
+                output: result.output,
+                executionCount: execCounter,
+                error: result.error,
+                images: result.images || [],
+            }));
+        } catch (err) {
+            ws.send(JSON.stringify({
+                type: 'cell:output',
+                cellId,
+                output: `Error: ${err.message}`,
+                executionCount: execCounter,
+                error: true,
+            }));
+        }
+    }
+
+    function readFileSafe(filePath) {
+        const resolved = path.resolve(process.cwd(), filePath);
+        if (!resolved.startsWith(process.cwd())) {
+            return { error: 'Access denied' };
+        }
+        try {
+            const content = fs.readFileSync(resolved, 'utf-8');
+            return { content };
+        } catch (err) {
+            return { error: err.message };
+        }
+    }
+
+    function makeToolExecutor(ws) {
+        return async function executeTool(name, args) {
+            switch (name) {
+                case 'run_cell': {
+                    const cell = notebookCells.find(c => c.id === args.cellId);
+                    if (!cell) return { error: `Cell ${args.cellId} not found` };
+                    const result = await pythonBridge.execute(cell.content || '');
+                    cell.output = result.output;
+                    cell.error = result.error || null;
+                    cell.executionCount = null;
+                    ws.send(JSON.stringify({
+                        type: 'cell:output',
+                        cellId: args.cellId,
+                        output: result.output,
+                        executionCount: 0,
+                        error: result.error || false,
+                        images: result.images || [],
+                    }));
+                    return { output: result.output, error: result.error, images: result.images || [] };
+                }
+
+                case 'create_cell': {
+                    const content = (args.content || '').trim();
+                    const existing = notebookCells.find(c => c.content === '' && c.id.startsWith('agent_cell_'));
+                    if (existing) {
+                        existing.content = content;
+                        existing.type = args.type || 'code';
+                        return { cellId: existing.id, type: existing.type };
+                    }
+                    const cellId = `agent_cell_${++agentCellCounter}`;
+                    const newCell = { id: cellId, type: args.type || 'code', content, output: null, executionCount: null, error: null };
+                    notebookCells.push(newCell);
+                    ws.send(JSON.stringify({
+                        type: 'cell:add',
+                        cellId,
+                        cellType: newCell.type,
+                        content,
+                        index: args.index,
+                    }));
+                    return { cellId, type: newCell.type };
+                }
+
+                case 'edit_cell': {
+                    const content = (args.content || '').trim();
+                    const cell = notebookCells.find(c => c.id === args.cellId);
+                    if (cell) cell.content = content;
+                    ws.send(JSON.stringify({
+                        type: 'cell:update',
+                        cellId: args.cellId,
+                        content,
+                    }));
+                    return { cellId: args.cellId, updated: true };
+                }
+
+                case 'delete_cell': {
+                    notebookCells = notebookCells.filter(c => c.id !== args.cellId);
+                    ws.send(JSON.stringify({
+                        type: 'cell:delete',
+                        cellId: args.cellId,
+                    }));
+                    return { cellId: args.cellId, deleted: true };
+                }
+
+                case 'list_files': {
+                    const requested = args.path || '.';
+                    const resolved = path.resolve(process.cwd(), requested);
+                    if (!resolved.startsWith(process.cwd())) {
+                        return { error: 'Access denied', files: [] };
+                    }
+                    try {
+                        const entries = fs.readdirSync(resolved, { withFileTypes: true });
+                        const files = entries
+                            .filter(e => !e.name.startsWith('.'))
+                            .map(e => ({
+                                name: e.name,
+                                isDir: e.isDirectory(),
+                                size: e.isFile() ? fs.statSync(path.join(resolved, e.name)).size : 0,
+                            }))
+                            .sort((a, b) => {
+                                if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
+                                return a.name.localeCompare(b.name);
+                            });
+                        return { path: requested, files };
+                    } catch {
+                        return { path: requested, files: [], error: 'Failed to list directory' };
+                    }
+                }
+
+                case 'read_file': {
+                    const result = readFileSafe(args.path);
+                    return result;
+                }
+
+                case 'get_cells': {
+                    return { cells: notebookCells.map(c => ({ id: c.id, type: c.type, content: c.content, output: c.output, error: c.error })) };
+                }
+
+                default:
+                    return { error: `Unknown tool: ${name}` };
+            }
+        };
+    }
+
+    async function handleAgentMessage(ws, msg) {
+        const apiKey = process.env.OPENROUTER_API_KEY;
+        if (!apiKey) {
+            ws.send(JSON.stringify({
+                type: 'agent:reply',
+                done: true,
+                error: 'OPENROUTER_API_KEY not set. Add it to environment variables.',
+            }));
+            return;
+        }
+
+        const history = msg.history || [];
+        const userText = msg.text || '';
+
+        // Sync server-side cell state
+        if (msg.cells) {
+            notebookCells = msg.cells.map(c => ({ ...c }));
+        }
+
+        const executeTool = makeToolExecutor(ws);
+
+        try {
+            const stream = streamChat(userText, history, msg.model, apiKey, executeTool);
+            for await (const token of stream) {
+                ws.send(JSON.stringify({
+                    type: 'agent:reply',
+                    token,
+                    done: false,
+                }));
+            }
+            ws.send(JSON.stringify({
+                type: 'agent:reply',
+                done: true,
+            }));
+        } catch (err) {
+            ws.send(JSON.stringify({
+                type: 'agent:reply',
+                token: `Error: ${err.message}`,
+                done: true,
+                error: true,
+            }));
+        }
+    }
+
+    wss.on('connection', (ws) => {
+        console.log('Client connected');
+
+        ws.on('message', (raw) => {
+            let msg;
+            try {
+                msg = JSON.parse(raw.toString());
+            } catch {
+                return;
+            }
+
+            switch (msg.type) {
+                case 'cell:execute':
+                    handleCellExecute(ws, msg);
+                    break;
+
+                case 'agent:message':
+                    handleAgentMessage(ws, msg);
+                    break;
+
+                case 'fs:list':
+                    handleFsList(ws, msg);
+                    break;
+
+                case 'kernel:interrupt':
+                    pythonBridge.interrupt();
+                    ws.send(JSON.stringify({ type: 'kernel:status', status: 'interrupted' }));
+                    break;
+
+                case 'kernel:restart':
+                    pythonBridge.restart();
+                    ws.send(JSON.stringify({ type: 'kernel:status', status: 'restarted' }));
+                    break;
+
+                default:
+                    break;
+            }
+        });
+
+        ws.on('close', () => console.log('Client disconnected'));
+    });
+
+    server.listen(port, async () => {
+        const url = `http://localhost:${port}`;
+        console.log(`Web UI running at: ${url}`);
+        console.log('Press Ctrl+C to stop.');
+
+        await open(url);
+    });
+}
+
+module.exports = { startServer };
