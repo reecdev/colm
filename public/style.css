@@ -810,3 +810,21 @@ input, select, textarea, button {
   66%  { background-position: 0 100%, 100% 100%, 50% 0; }
   100% { background-position: 50% 0, 0 100%, 100% 100%; }
 }
+
+.thinking-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.agent-status {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}

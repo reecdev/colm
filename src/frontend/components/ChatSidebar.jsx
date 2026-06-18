@@ -8,7 +8,7 @@ function MarkdownContent({ text }) {
   return <div className="message-content" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
-export default function ChatSidebar({ messages, streamingMessage, onSend, isThinking }) {
+export default function ChatSidebar({ messages, streamingMessage, onSend, isThinking, agentStatus }) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
 
@@ -47,7 +47,10 @@ export default function ChatSidebar({ messages, streamingMessage, onSend, isThin
         {isThinking && !streamingMessage && (
           <div className="message message-assistant">
             <div className="message-label">CoLM</div>
-            <div className="thinking-loader" />
+            <div className="thinking-row">
+              <div className="thinking-loader" />
+              {agentStatus && <span className="agent-status">{agentStatus}</span>}
+            </div>
           </div>
         )}
         {streamingMessage && (

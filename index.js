@@ -6,6 +6,7 @@ const { WebSocketServer } = require('ws');
 const { default: open } = require('open');
 const pythonBridge = require('./src/server/python-bridge');
 const { streamChat } = require('./src/server/llm');
+const { PROVIDERS } = require('./src/providers');
 
 let execCounter = 0;
 let agentCellCounter = 0;
@@ -90,6 +91,7 @@ function startServer(port) {
         return async function executeTool(name, args) {
             switch (name) {
                 case 'run_cell': {
+                    ws.send(JSON.stringify({ type: 'agent:status', status: `Running ${args.cellId}...` }));
                     const cell = notebookCells.find(c => c.id === args.cellId);
                     if (!cell) return { error: `Cell ${args.cellId} not found` };
                     const result = await pythonBridge.execute(cell.content || '');
@@ -104,10 +106,11 @@ function startServer(port) {
                         error: result.error || false,
                         images: result.images || [],
                     }));
-                    return { output: result.output, error: result.error, images: result.images || [] };
+                    return { output: result.output, error: result.error };
                 }
 
                 case 'create_cell': {
+                    ws.send(JSON.stringify({ type: 'agent:status', status: 'Creating cell...' }));
                     const content = (args.content || '').trim();
                     const existing = notebookCells.find(c => c.content === '' && c.id.startsWith('agent_cell_'));
                     if (existing) {
@@ -129,6 +132,7 @@ function startServer(port) {
                 }
 
                 case 'edit_cell': {
+                    ws.send(JSON.stringify({ type: 'agent:status', status: `Editing ${args.cellId}...` }));
                     const content = (args.content || '').trim();
                     const cell = notebookCells.find(c => c.id === args.cellId);
                     if (cell) cell.content = content;
@@ -141,6 +145,7 @@ function startServer(port) {
                 }
 
                 case 'delete_cell': {
+                    ws.send(JSON.stringify({ type: 'agent:status', status: `Deleting ${args.cellId}...` }));
                     notebookCells = notebookCells.filter(c => c.id !== args.cellId);
                     ws.send(JSON.stringify({
                         type: 'cell:delete',
@@ -150,6 +155,7 @@ function startServer(port) {
                 }
 
                 case 'list_files': {
+                    ws.send(JSON.stringify({ type: 'agent:status', status: 'Browsing files...' }));
                     const requested = args.path || '.';
                     const resolved = path.resolve(process.cwd(), requested);
                     if (!resolved.startsWith(process.cwd())) {
@@ -175,11 +181,13 @@ function startServer(port) {
                 }
 
                 case 'read_file': {
+                    ws.send(JSON.stringify({ type: 'agent:status', status: 'Reading file...' }));
                     const result = readFileSafe(args.path);
                     return result;
                 }
 
                 case 'get_cells': {
+                    ws.send(JSON.stringify({ type: 'agent:status', status: 'Inspecting notebook...' }));
                     return { cells: notebookCells.map(c => ({ id: c.id, type: c.type, content: c.content, output: c.output, error: c.error })) };
                 }
 
@@ -190,12 +198,23 @@ function startServer(port) {
     }
 
     async function handleAgentMessage(ws, msg) {
-        const apiKey = process.env.OPENROUTER_API_KEY;
+        const providerId = msg.provider || 'openrouter';
+        const provider = PROVIDERS[providerId];
+        if (!provider) {
+            ws.send(JSON.stringify({
+                type: 'agent:reply',
+                done: true,
+                error: `Unknown provider: ${providerId}`,
+            }));
+            return;
+        }
+
+        const apiKey = process.env[provider.envKey];
         if (!apiKey) {
             ws.send(JSON.stringify({
                 type: 'agent:reply',
                 done: true,
-                error: 'OPENROUTER_API_KEY not set. Add it to environment variables.',
+                error: `${provider.envKey} not set. Add it to environment variables.`,
             }));
             return;
         }
@@ -211,7 +230,7 @@ function startServer(port) {
         const executeTool = makeToolExecutor(ws);
 
         try {
-            const stream = streamChat(userText, history, msg.model, apiKey, executeTool);
+            const stream = streamChat(userText, history, msg.model, apiKey, executeTool, provider.baseUrl);
             for await (const token of stream) {
                 ws.send(JSON.stringify({
                     type: 'agent:reply',
@@ -235,6 +254,13 @@ function startServer(port) {
 
     wss.on('connection', (ws) => {
         console.log('Client connected');
+
+        // Send provider availability status
+        const providerStatus = {};
+        for (const [id, p] of Object.entries(PROVIDERS)) {
+            providerStatus[id] = !!process.env[p.envKey];
+        }
+        ws.send(JSON.stringify({ type: 'providers:status', providers: providerStatus }));
 
         ws.on('message', (raw) => {
             let msg;

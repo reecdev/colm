@@ -3,6 +3,7 @@ import Notebook from './components/Notebook';
 import ChatSidebar from './components/ChatSidebar';
 import Toolbar from './components/Toolbar';
 import FileBrowser from './components/FileBrowser';
+import { PROVIDERS } from '../providers.js';
 
 let cellCounter = 0;
 function generateCellId() {
@@ -39,6 +40,8 @@ export default function App() {
   const [cells, setCells] = useState([]);
   const [messages, setMessages] = useState([]);
   const [model, setModel] = useState('nvidia/nemotron-3-nano-30b-a3b:free');
+  const [provider, setProvider] = useState('openrouter');
+  const [providerStatus, setProviderStatus] = useState({});
   const [connected, setConnected] = useState(false);
   const [theme, setTheme] = useState('dark');
   const [activeCellId, setActiveCellId] = useState(null);
@@ -51,6 +54,13 @@ export default function App() {
   const clipboardRef = useRef(null);
   const [streamingMessage, setStreamingMessage] = useState('');
   const [isThinking, setIsThinking] = useState(false);
+  const [agentStatus, setAgentStatus] = useState('');
+
+  // Reset model when provider changes
+  useEffect(() => {
+    const p = PROVIDERS[provider];
+    if (p) setModel(p.defaultModel);
+  }, [provider]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -98,10 +108,12 @@ export default function App() {
             streamingRef.current = '';
             setStreamingMessage('');
             setIsThinking(false);
+            setAgentStatus('');
           } else {
             const token = msg.token || '';
             if (!streamingRef.current && token) {
               streamingRef.current += token.trimStart();
+              setAgentStatus('');
             } else {
               streamingRef.current += token;
             }
@@ -110,6 +122,9 @@ export default function App() {
           }
           break;
         case 'agent:action':
+          break;
+        case 'agent:status':
+          setAgentStatus(msg.status || '');
           break;
         case 'cell:add':
           setCells(prev => {
@@ -139,6 +154,9 @@ export default function App() {
           if (msg.status === 'restarted') {
             setCells(prev => prev.map(c => ({ ...c, output: null, executionCount: null, error: null })));
           }
+          break;
+        case 'providers:status':
+          setProviderStatus(msg.providers || {});
           break;
         case 'fs:list':
           setFiles(msg.files || []);
@@ -219,12 +237,13 @@ export default function App() {
 
   const handleAgentMessage = useCallback((text) => {
     setIsThinking(true);
+    setAgentStatus('Contemplating...');
     setMessages(prev => {
       const next = [...prev, { role: 'user', content: text }];
-      send('agent:message', { text, model, history: next, cells });
+      send('agent:message', { text, model, provider, history: next, cells });
       return next;
     });
-  }, [send, model, cells]);
+  }, [send, model, provider, cells]);
 
   const handleDownload = useCallback(() => {
     const nb = {
@@ -329,6 +348,9 @@ export default function App() {
         onThemeChange={setTheme}
         model={model}
         onModelChange={setModel}
+        provider={provider}
+        providerStatus={providerStatus}
+        onProviderChange={setProvider}
         activeCellId={activeCellId}
         cells={cells}
         onCutCell={handleCutCell}
@@ -369,6 +391,7 @@ export default function App() {
             streamingMessage={streamingMessage}
             isThinking={isThinking}
             onSend={handleAgentMessage}
+            agentStatus={agentStatus}
           />
         )}
       </div>

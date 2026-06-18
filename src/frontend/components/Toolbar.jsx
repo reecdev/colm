@@ -1,17 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-
-const FREE_MODELS = [
-  { id: 'nvidia/nemotron-3-nano-30b-a3b:free', label: 'Nemotron 3 Nano 30B' },
-  { id: 'openai/gpt-oss-120b:free', label: 'GPT-OSS 120B' },
-  { id: 'nvidia/nemotron-3-super-120b-a12b:free', label: 'Nemotron 3 Super 120B' },
-  { id: 'qwen/qwen3-coder:free', label: 'Qwen3 Coder' },
-  { id: 'openrouter/owl-alpha', label: 'Owl Alpha (agent-optimized)' },
-  { id: 'nex-agi/nex-n2-pro:free', label: 'Nex N2 Pro' },
-  { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'Llama 3.3 70B' },
-  { id: 'google/gemma-4-31b-it:free', label: 'Gemma 4 31B' },
-];
+import { PROVIDERS } from '../../providers.js';
 
 const THEMES = ['light', 'dark', 'midnight', 'catppuccin'];
+
+function ProviderOption({ id, p, status }) {
+  const available = status[id] !== false;
+  const label = available ? p.label : `${p.label} (key not set)`;
+  return <option value={id} disabled={!available}>{label}</option>;
+}
 
 export default function Toolbar({
   onAddCell, onRunAll, onDownload, onImport, connected, theme, onThemeChange,
@@ -20,12 +16,16 @@ export default function Toolbar({
   onRunSelected, onRunAbove, onRunBelow,
   showFileBrowser, showChatSidebar, onToggleFileBrowser, onToggleChatSidebar,
   onKernelInterrupt, onKernelRestart,
+  provider, providerStatus, onProviderChange,
 }) {
   const [notebookName, setNotebookName] = useState('Untitled notebook');
   const [activeMenu, setActiveMenu] = useState(null);
   const [customInput, setCustomInput] = useState('');
   const importRef = useRef(null);
   const menuRef = useRef(null);
+
+  const currentProvider = PROVIDERS[provider] || PROVIDERS.openrouter;
+  const currentModels = currentProvider.models || [];
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -36,6 +36,13 @@ export default function Toolbar({
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
+
+  const handleProviderSelect = (e) => {
+    const val = e.target.value;
+    if (val && val !== provider) {
+      onProviderChange(val);
+    }
+  };
 
   const handleModelSelect = (e) => {
     const val = e.target.value;
@@ -214,10 +221,17 @@ export default function Toolbar({
             </div>
             {activeMenu === 'agent' && (
               <div className="menu-dropdown menu-dropdown-wide">
+                <div className="menu-dropdown-label">Provider</div>
+                <select className="menu-dropdown-select" value={provider} onChange={handleProviderSelect}>
+                  {Object.entries(PROVIDERS).map(([id, p]) => (
+                    <ProviderOption key={id} id={id} p={p} status={providerStatus} />
+                  ))}
+                </select>
+
                 <div className="menu-dropdown-label">Model</div>
                 <select className="menu-dropdown-select" value={model} onChange={handleModelSelect}>
-                  {FREE_MODELS.map(m => (
-                    <option key={m.id} value={m.id}>{m.label}</option>
+                  {currentModels.map(m => (
+                    <option key={m} value={m}>{m}</option>
                   ))}
                   <option value="__custom__">Custom...</option>
                 </select>

@@ -48262,7 +48262,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     const html = g.parse(text || "");
     return /* @__PURE__ */ import_react3.default.createElement("div", { className: "message-content", dangerouslySetInnerHTML: { __html: html } });
   }
-  function ChatSidebar({ messages, streamingMessage, onSend, isThinking }) {
+  function ChatSidebar({ messages, streamingMessage, onSend, isThinking, agentStatus }) {
     const [input, setInput] = (0, import_react3.useState)("");
     const messagesEndRef = (0, import_react3.useRef)(null);
     (0, import_react3.useEffect)(() => {
@@ -48280,7 +48280,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
         handleSubmit(e);
       }
     };
-    return /* @__PURE__ */ import_react3.default.createElement("div", { className: "sidebar" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "sidebar-messages" }, messages.length === 0 && !streamingMessage && !isThinking && /* @__PURE__ */ import_react3.default.createElement("div", { className: "sidebar-empty" }, /* @__PURE__ */ import_react3.default.createElement("strong", null, "What should we research today?")), messages.map((msg, i2) => /* @__PURE__ */ import_react3.default.createElement("div", { key: i2, className: `message message-${msg.role}${msg.error ? " message-error" : ""}` }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "message-label" }, msg.role === "user" ? "You" : "CoLM"), /* @__PURE__ */ import_react3.default.createElement(MarkdownContent, { text: msg.content }))), isThinking && !streamingMessage && /* @__PURE__ */ import_react3.default.createElement("div", { className: "message message-assistant" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "message-label" }, "CoLM"), /* @__PURE__ */ import_react3.default.createElement("div", { className: "thinking-loader" })), streamingMessage && /* @__PURE__ */ import_react3.default.createElement("div", { className: "message message-assistant" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "message-label" }, "CoLM"), /* @__PURE__ */ import_react3.default.createElement("div", { className: "message-content" }, streamingMessage, /* @__PURE__ */ import_react3.default.createElement("span", { className: "cursor-blink" }, "\u258A"))), /* @__PURE__ */ import_react3.default.createElement("div", { ref: messagesEndRef })), /* @__PURE__ */ import_react3.default.createElement("form", { className: "sidebar-input", onSubmit: handleSubmit }, /* @__PURE__ */ import_react3.default.createElement(
+    return /* @__PURE__ */ import_react3.default.createElement("div", { className: "sidebar" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "sidebar-messages" }, messages.length === 0 && !streamingMessage && !isThinking && /* @__PURE__ */ import_react3.default.createElement("div", { className: "sidebar-empty" }, /* @__PURE__ */ import_react3.default.createElement("strong", null, "What should we research today?")), messages.map((msg, i2) => /* @__PURE__ */ import_react3.default.createElement("div", { key: i2, className: `message message-${msg.role}${msg.error ? " message-error" : ""}` }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "message-label" }, msg.role === "user" ? "You" : "CoLM"), /* @__PURE__ */ import_react3.default.createElement(MarkdownContent, { text: msg.content }))), isThinking && !streamingMessage && /* @__PURE__ */ import_react3.default.createElement("div", { className: "message message-assistant" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "message-label" }, "CoLM"), /* @__PURE__ */ import_react3.default.createElement("div", { className: "thinking-row" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "thinking-loader" }), agentStatus && /* @__PURE__ */ import_react3.default.createElement("span", { className: "agent-status" }, agentStatus))), streamingMessage && /* @__PURE__ */ import_react3.default.createElement("div", { className: "message message-assistant" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "message-label" }, "CoLM"), /* @__PURE__ */ import_react3.default.createElement("div", { className: "message-content" }, streamingMessage, /* @__PURE__ */ import_react3.default.createElement("span", { className: "cursor-blink" }, "\u258A"))), /* @__PURE__ */ import_react3.default.createElement("div", { ref: messagesEndRef })), /* @__PURE__ */ import_react3.default.createElement("form", { className: "sidebar-input", onSubmit: handleSubmit }, /* @__PURE__ */ import_react3.default.createElement(
       "textarea",
       {
         value: input,
@@ -48299,7 +48299,144 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     }
   });
 
+  // src/providers.js
+  var require_providers = __commonJS({
+    "src/providers.js"(exports, module) {
+      var PROVIDERS3 = {
+        openrouter: {
+          label: "OpenRouter",
+          envKey: "OPENROUTER_API_KEY",
+          baseUrl: "https://openrouter.ai/api/v1",
+          defaultModel: "nvidia/nemotron-3-nano-30b-a3b:free",
+          models: [
+            "nvidia/nemotron-3-nano-30b-a3b:free",
+            "openai/gpt-oss-120b:free",
+            "nvidia/nemotron-3-super-120b-a12b:free",
+            "qwen/qwen3-coder:free",
+            "openrouter/owl-alpha",
+            "nex-agi/nex-n2-pro:free",
+            "meta-llama/llama-3.3-70b-instruct:free",
+            "google/gemma-4-31b-it:free"
+          ]
+        },
+        openai: {
+          label: "OpenAI",
+          envKey: "OPENAI_API_KEY",
+          baseUrl: "https://api.openai.com/v1",
+          defaultModel: "gpt-5.4-mini",
+          models: [
+            "gpt-5.5",
+            "gpt-5.4",
+            "gpt-5.4-mini",
+            "gpt-5.4-nano",
+            "gpt-5.3-codex",
+            "o3",
+            "o3-mini",
+            "gpt-4.1",
+            "gpt-4o",
+            "gpt-4o-mini"
+          ]
+        },
+        anthropic: {
+          label: "Anthropic",
+          envKey: "ANTHROPIC_API_KEY",
+          baseUrl: "https://api.anthropic.com/v1",
+          defaultModel: "claude-sonnet-4-6",
+          models: [
+            "claude-opus-4-8",
+            "claude-sonnet-4-6",
+            "claude-haiku-4-5",
+            "claude-opus-4-6",
+            "claude-sonnet-4-5",
+            "claude-3-5-sonnet"
+          ]
+        },
+        google: {
+          label: "Google",
+          envKey: "GOOGLE_API_KEY",
+          baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+          defaultModel: "gemini-3.5-flash",
+          models: [
+            "gemini-3.5-flash",
+            "gemini-3.1-pro",
+            "gemini-3-flash",
+            "gemini-2.5-pro",
+            "gemini-2.5-flash",
+            "gemini-2.5-flash-lite"
+          ]
+        },
+        glm: {
+          label: "GLM",
+          envKey: "GLM_API_KEY",
+          baseUrl: "https://open.bigmodel.cn/api/paas/v4",
+          defaultModel: "glm-4.7",
+          models: [
+            "glm-5.2",
+            "glm-5.1",
+            "glm-5",
+            "glm-5-turbo",
+            "glm-5-code",
+            "glm-4.7",
+            "glm-4.7-flash",
+            "glm-4.5"
+          ]
+        },
+        groq: {
+          label: "Groq",
+          envKey: "GROQ_API_KEY",
+          baseUrl: "https://api.groq.com/openai/v1",
+          defaultModel: "llama-3.3-70b-versatile",
+          models: [
+            "llama-3.3-70b-versatile",
+            "llama-4-scout",
+            "qwen3-32b",
+            "llama-3.1-8b-instant",
+            "gpt-oss-120b",
+            "gpt-oss-20b"
+          ]
+        },
+        opencodezen: {
+          label: "OpenCode Zen",
+          envKey: "OPENCODE_API_KEY",
+          baseUrl: "https://opencode.ai/zen/v1",
+          defaultModel: "gpt-5.4-mini",
+          models: [
+            "gpt-5.5",
+            "gpt-5.4",
+            "gpt-5.4-mini",
+            "gpt-5.4-nano",
+            "gpt-5.3-codex",
+            "gpt-5.2-codex",
+            "claude-sonnet-4-6",
+            "claude-haiku-4-5",
+            "deepseek-v4-flash-free"
+          ]
+        },
+        huggingface: {
+          label: "HuggingFace",
+          envKey: "HUGGINGFACE_API_KEY",
+          baseUrl: "https://router.huggingface.co/hf/v1",
+          defaultModel: "meta-llama/Llama-3.1-8B-Instruct",
+          models: [
+            "meta-llama/Llama-3.1-8B-Instruct",
+            "Qwen/Qwen2.5-72B-Instruct",
+            "meta-llama/Llama-3.2-11B-Vision-Instruct",
+            "google/gemma-2-9b-it"
+          ]
+        }
+      };
+      if (typeof module !== "undefined" && module.exports) {
+        module.exports = { PROVIDERS: PROVIDERS3 };
+      }
+    }
+  });
+
   // src/frontend/components/Toolbar.jsx
+  function ProviderOption({ id: id2, p, status }) {
+    const available = status[id2] !== false;
+    const label = available ? p.label : `${p.label} (key not set)`;
+    return /* @__PURE__ */ import_react4.default.createElement("option", { value: id2, disabled: !available }, label);
+  }
   function Toolbar({
     onAddCell,
     onRunAll,
@@ -48328,13 +48465,18 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     onToggleFileBrowser,
     onToggleChatSidebar,
     onKernelInterrupt,
-    onKernelRestart
+    onKernelRestart,
+    provider,
+    providerStatus,
+    onProviderChange
   }) {
     const [notebookName, setNotebookName] = (0, import_react4.useState)("Untitled notebook");
     const [activeMenu, setActiveMenu] = (0, import_react4.useState)(null);
     const [customInput, setCustomInput] = (0, import_react4.useState)("");
     const importRef = (0, import_react4.useRef)(null);
     const menuRef = (0, import_react4.useRef)(null);
+    const currentProvider = import_providers.PROVIDERS[provider] || import_providers.PROVIDERS.openrouter;
+    const currentModels = currentProvider.models || [];
     (0, import_react4.useEffect)(() => {
       const handleClick = (e) => {
         if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -48344,6 +48486,12 @@ Please report this to https://github.com/markedjs/marked.`, e) {
       document.addEventListener("mousedown", handleClick);
       return () => document.removeEventListener("mousedown", handleClick);
     }, []);
+    const handleProviderSelect = (e) => {
+      const val = e.target.value;
+      if (val && val !== provider) {
+        onProviderChange(val);
+      }
+    };
     const handleModelSelect = (e) => {
       const val = e.target.value;
       if (val === "__custom__") {
@@ -48456,7 +48604,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
         onClick: () => setActiveMenu(activeMenu === "agent" ? null : "agent")
       },
       "Agent"
-    ), activeMenu === "agent" && /* @__PURE__ */ import_react4.default.createElement("div", { className: "menu-dropdown menu-dropdown-wide" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "menu-dropdown-label" }, "Model"), /* @__PURE__ */ import_react4.default.createElement("select", { className: "menu-dropdown-select", value: model, onChange: handleModelSelect }, FREE_MODELS.map((m2) => /* @__PURE__ */ import_react4.default.createElement("option", { key: m2.id, value: m2.id }, m2.label)), /* @__PURE__ */ import_react4.default.createElement("option", { value: "__custom__" }, "Custom...")), /* @__PURE__ */ import_react4.default.createElement("div", { className: "menu-dropdown-label" }, "Custom model ID"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "menu-dropdown-row" }, /* @__PURE__ */ import_react4.default.createElement(
+    ), activeMenu === "agent" && /* @__PURE__ */ import_react4.default.createElement("div", { className: "menu-dropdown menu-dropdown-wide" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "menu-dropdown-label" }, "Provider"), /* @__PURE__ */ import_react4.default.createElement("select", { className: "menu-dropdown-select", value: provider, onChange: handleProviderSelect }, Object.entries(import_providers.PROVIDERS).map(([id2, p]) => /* @__PURE__ */ import_react4.default.createElement(ProviderOption, { key: id2, id: id2, p, status: providerStatus }))), /* @__PURE__ */ import_react4.default.createElement("div", { className: "menu-dropdown-label" }, "Model"), /* @__PURE__ */ import_react4.default.createElement("select", { className: "menu-dropdown-select", value: model, onChange: handleModelSelect }, currentModels.map((m2) => /* @__PURE__ */ import_react4.default.createElement("option", { key: m2, value: m2 }, m2)), /* @__PURE__ */ import_react4.default.createElement("option", { value: "__custom__" }, "Custom...")), /* @__PURE__ */ import_react4.default.createElement("div", { className: "menu-dropdown-label" }, "Custom model ID"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "menu-dropdown-row" }, /* @__PURE__ */ import_react4.default.createElement(
       "input",
       {
         className: "menu-dropdown-input",
@@ -48467,20 +48615,11 @@ Please report this to https://github.com/markedjs/marked.`, e) {
       }
     ), /* @__PURE__ */ import_react4.default.createElement("button", { className: "menu-dropdown-btn", onClick: handleCustomSubmit }, "Set")), /* @__PURE__ */ import_react4.default.createElement("div", { className: "menu-dropdown-current" }, "Current: ", /* @__PURE__ */ import_react4.default.createElement("code", null, model))))), /* @__PURE__ */ import_react4.default.createElement("div", { className: "toolbar-menu-right" }, /* @__PURE__ */ import_react4.default.createElement("button", { className: "toolbar-act-btn", onClick: () => onAddCell("code") }, "+ Code"), /* @__PURE__ */ import_react4.default.createElement("button", { className: "toolbar-act-btn", onClick: () => onAddCell("markdown") }, "+ Markdown"), /* @__PURE__ */ import_react4.default.createElement("button", { className: "toolbar-act-btn", onClick: onRunAll }, "\u25B6 Run All"), /* @__PURE__ */ import_react4.default.createElement("a", { href: "https://github.com/reecdev/colm", target: "_blank", rel: "noopener noreferrer", className: "toolbar-github", title: "GitHub" }, /* @__PURE__ */ import_react4.default.createElement("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "currentColor" }, /* @__PURE__ */ import_react4.default.createElement("path", { d: "M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12 24 5.37 18.63 0 12 0z" }))))));
   }
-  var import_react4, FREE_MODELS, THEMES;
+  var import_react4, import_providers, THEMES;
   var init_Toolbar = __esm({
     "src/frontend/components/Toolbar.jsx"() {
       import_react4 = __toESM(require_react());
-      FREE_MODELS = [
-        { id: "openai/gpt-oss-120b:free", label: "GPT-OSS 120B" },
-        { id: "nvidia/nemotron-3-nano-30b-a3b:free", label: "Nemotron 3 Nano 30B" },
-        { id: "nvidia/nemotron-3-super-120b-a12b:free", label: "Nemotron 3 Super 120B" },
-        { id: "qwen/qwen3-coder:free", label: "Qwen3 Coder" },
-        { id: "openrouter/owl-alpha", label: "Owl Alpha (agent-optimized)" },
-        { id: "nex-agi/nex-n2-pro:free", label: "Nex N2 Pro" },
-        { id: "meta-llama/llama-3.3-70b-instruct:free", label: "Llama 3.3 70B" },
-        { id: "google/gemma-4-31b-it:free", label: "Gemma 4 31B" }
-      ];
+      import_providers = __toESM(require_providers());
       THEMES = ["light", "dark", "midnight", "catppuccin"];
     }
   });
@@ -48546,6 +48685,8 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     const [cells, setCells] = (0, import_react6.useState)([]);
     const [messages, setMessages] = (0, import_react6.useState)([]);
     const [model, setModel] = (0, import_react6.useState)("nvidia/nemotron-3-nano-30b-a3b:free");
+    const [provider, setProvider] = (0, import_react6.useState)("openrouter");
+    const [providerStatus, setProviderStatus] = (0, import_react6.useState)({});
     const [connected, setConnected] = (0, import_react6.useState)(false);
     const [theme2, setTheme] = (0, import_react6.useState)("dark");
     const [activeCellId, setActiveCellId] = (0, import_react6.useState)(null);
@@ -48558,6 +48699,11 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     const clipboardRef = (0, import_react6.useRef)(null);
     const [streamingMessage, setStreamingMessage] = (0, import_react6.useState)("");
     const [isThinking, setIsThinking] = (0, import_react6.useState)(false);
+    const [agentStatus, setAgentStatus] = (0, import_react6.useState)("");
+    (0, import_react6.useEffect)(() => {
+      const p = import_providers2.PROVIDERS[provider];
+      if (p) setModel(p.defaultModel);
+    }, [provider]);
     (0, import_react6.useEffect)(() => {
       document.documentElement.setAttribute("data-theme", theme2);
     }, [theme2]);
@@ -48597,10 +48743,12 @@ Please report this to https://github.com/markedjs/marked.`, e) {
               streamingRef.current = "";
               setStreamingMessage("");
               setIsThinking(false);
+              setAgentStatus("");
             } else {
               const token = msg.token || "";
               if (!streamingRef.current && token) {
                 streamingRef.current += token.trimStart();
+                setAgentStatus("");
               } else {
                 streamingRef.current += token;
               }
@@ -48609,6 +48757,9 @@ Please report this to https://github.com/markedjs/marked.`, e) {
             }
             break;
           case "agent:action":
+            break;
+          case "agent:status":
+            setAgentStatus(msg.status || "");
             break;
           case "cell:add":
             setCells((prev) => {
@@ -48638,6 +48789,9 @@ Please report this to https://github.com/markedjs/marked.`, e) {
             if (msg.status === "restarted") {
               setCells((prev) => prev.map((c) => ({ ...c, output: null, executionCount: null, error: null })));
             }
+            break;
+          case "providers:status":
+            setProviderStatus(msg.providers || {});
             break;
           case "fs:list":
             setFiles(msg.files || []);
@@ -48708,12 +48862,13 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     }, [cells, activeCellId, send]);
     const handleAgentMessage = (0, import_react6.useCallback)((text) => {
       setIsThinking(true);
+      setAgentStatus("Contemplating...");
       setMessages((prev) => {
         const next = [...prev, { role: "user", content: text }];
-        send("agent:message", { text, model, history: next, cells });
+        send("agent:message", { text, model, provider, history: next, cells });
         return next;
       });
-    }, [send, model, cells]);
+    }, [send, model, provider, cells]);
     const handleDownload = (0, import_react6.useCallback)(() => {
       const nb = {
         nbformat: 4,
@@ -48809,6 +48964,9 @@ Please report this to https://github.com/markedjs/marked.`, e) {
         onThemeChange: setTheme,
         model,
         onModelChange: setModel,
+        provider,
+        providerStatus,
+        onProviderChange: setProvider,
         activeCellId,
         cells,
         onCutCell: handleCutCell,
@@ -48853,11 +49011,12 @@ Please report this to https://github.com/markedjs/marked.`, e) {
         messages,
         streamingMessage,
         isThinking,
-        onSend: handleAgentMessage
+        onSend: handleAgentMessage,
+        agentStatus
       }
     )));
   }
-  var import_react6, cellCounter;
+  var import_react6, import_providers2, cellCounter;
   var init_App = __esm({
     "src/frontend/App.jsx"() {
       import_react6 = __toESM(require_react());
@@ -48865,6 +49024,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
       init_ChatSidebar();
       init_Toolbar();
       init_FileBrowser();
+      import_providers2 = __toESM(require_providers());
       cellCounter = 0;
     }
   });

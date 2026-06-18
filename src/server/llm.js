@@ -1,5 +1,3 @@
-const OPENROUTER_API = 'https://openrouter.ai/api/v1/chat/completions';
-
 const SYSTEM_PROMPT = `You are an AI assistant embedded in a Jupyter notebook web UI called CoLM.
 You have tools to interact with the notebook environment.
 
@@ -141,20 +139,19 @@ function buildMessages(userText, history) {
 }
 
 async function apiPost(body) {
-  const response = await fetch(OPENROUTER_API, {
+  const url = `${body.baseUrl}/chat/completions`;
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${body.apiKey}`,
       'Content-Type': 'application/json',
-      'HTTP-Referer': 'http://localhost:5050',
-      'X-Title': 'CoLM',
     },
     body: JSON.stringify(body.payload),
   });
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`OpenRouter API error ${response.status}: ${text}`);
+    throw new Error(`API error ${response.status} from ${url}: ${text}`);
   }
 
   return response;
@@ -190,7 +187,7 @@ async function* streamTokens(response) {
   }
 }
 
-async function* streamChat(userText, history, model, apiKey, executeTool) {
+async function* streamChat(userText, history, model, apiKey, executeTool, baseUrl) {
   const messages = buildMessages(userText, history);
   let currentMessages = [...messages];
   const maxRounds = 10;
@@ -201,6 +198,7 @@ async function* streamChat(userText, history, model, apiKey, executeTool) {
     try {
       response = await apiPost({
         apiKey,
+        baseUrl,
         payload: {
           model: model || 'openrouter/free',
           messages: currentMessages,
@@ -215,6 +213,7 @@ async function* streamChat(userText, history, model, apiKey, executeTool) {
       if (round === 0) {
         const fallback = await apiPost({
           apiKey,
+          baseUrl,
           payload: {
             model: model || 'openrouter/free',
             messages: currentMessages,
@@ -276,6 +275,7 @@ async function* streamChat(userText, history, model, apiKey, executeTool) {
       // Re-request with streaming to deliver tokens
       const streamResponse = await apiPost({
         apiKey,
+        baseUrl,
         payload: {
           model: model || 'openrouter/free',
           messages: currentMessages,
@@ -291,6 +291,7 @@ async function* streamChat(userText, history, model, apiKey, executeTool) {
   // Fallback if max rounds reached: stream whatever we have
   const streamResponse = await apiPost({
     apiKey,
+    baseUrl,
     payload: {
       model: model || 'openrouter/free',
       messages: currentMessages,
