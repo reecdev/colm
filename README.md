@@ -7,3 +7,4 @@ Meant for use with Google Colab and other sandboxed platforms.
 ## Running In Colab
 To set up, ensure you have an NGROK token and that you have set all of your API keys in Colab secrets
 Then, simply import the colab.ipynb notebook into Google Colab or your platform of choice and hit the Run All button.
+You'll be provided with links in the final cell. To open the CoLM UI, **click on the link after the text that says "CoLM is running at:"**
