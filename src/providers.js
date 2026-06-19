@@ -120,6 +120,34 @@ const PROVIDERS = {
       'google/gemma-2-9b-it',
     ],
   },
+  cloudflare: {
+    label: 'Cloudflare',
+    envKey: 'CLOUDFLARE_API_TOKEN',
+    baseUrl: 'https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/v1',
+    defaultModel: '@cf/meta/llama-3.1-8b-instruct',
+    models: [
+      '@cf/meta/llama-3.1-8b-instruct',
+      '@cf/meta/llama-3-8b-instruct',
+      '@cf/meta/llama-3-70b-instruct',
+      '@cf/qwen/qwen1.5-14b-chat',
+      '@cf/mistral/mistral-7b-instruct-v0.2',
+    ],
+  },
+  github: {
+    label: 'GitHub',
+    envKey: 'GITHUB_TOKEN',
+    baseUrl: 'https://models.inference.ai.azure.com',
+    defaultModel: 'gpt-4o-mini',
+    models: [
+      'gpt-4o-mini',
+      'gpt-4o',
+      'meta-llama-3.1-405b-instruct',
+      'meta-llama-3.1-70b-instruct',
+      'meta-llama-3.1-8b-instruct',
+      'cohere-command-r-plus',
+      'mistral-large-2',
+    ],
+  },
 };
 
 if (typeof module !== 'undefined' && module.exports) {

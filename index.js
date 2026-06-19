@@ -229,8 +229,14 @@ function startServer(port) {
 
         const executeTool = makeToolExecutor(ws);
 
+        let baseUrl = provider.baseUrl;
+        if (providerId === 'cloudflare') {
+            const accountId = process.env.CLOUDFLARE_ACCOUNT_ID || '';
+            baseUrl = baseUrl.replace('{CLOUDFLARE_ACCOUNT_ID}', accountId);
+        }
+
         try {
-            const stream = streamChat(userText, history, msg.model, apiKey, executeTool, provider.baseUrl);
+            const stream = streamChat(userText, history, msg.model, apiKey, executeTool, baseUrl);
             for await (const token of stream) {
                 ws.send(JSON.stringify({
                     type: 'agent:reply',
