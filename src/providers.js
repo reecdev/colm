@@ -51,11 +51,11 @@ const PROVIDERS = {
     label: 'Google',
     envKey: 'GOOGLE_API_KEY',
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
-    defaultModel: 'gemini-3.5-flash',
+    defaultModel: 'gemini-3.1-flash-lite',
     models: [
+      'gemini-3.1-flash-lite',
       'gemini-3.5-flash',
       'gemini-3.1-pro',
-      'gemini-3-flash',
       'gemini-2.5-pro',
       'gemini-2.5-flash',
       'gemini-2.5-flash-lite',
