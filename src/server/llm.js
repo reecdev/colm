@@ -22,6 +22,7 @@ RULES:
 - If you get an error, try to fix it and re-run
 - NEVER write code in your chat responses. Only use create_cell to put code in the notebook, then run_cell to execute it.
 - When asked to edit, refactor, or optimize existing code, use edit_cell (don't create a new cell).
+- **Reuse cells whenever possible.** If a cell already exists with similar code, edit and re-run it instead of creating a brand new cell. The notebook should stay clean and not grow unnecessarily.
 - Your chat messages should contain only natural language explanations, analysis, and answers.
 - Never use tables in your responses. Use bullet points or plain text instead.`;
 
