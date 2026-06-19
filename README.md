@@ -16,4 +16,4 @@ If HTTPS does not work, try to load the link via HTTP instead of HTTPS.
 CoLM supports a varity of models from your favorite providers such as OpenRouter, OpenAI, Anthropic, Google, GLM, Groq, OpenCode Zen, and HuggingFace.
 
 My personal reccomendation is Gemini 3.1 Flash-Lite as it is extremely fast, cheap, and intelligent enough to operate a full Jupyter notebook entirely on it's own without any issues.
-Gemini 3.1 Flash-Lite is also available on the free-tier of the Gemini API. I personally use Flash-Lite on the free-tier.
+Gemini 3.1 Flash-Lite is also available on the free-tier of the Gemini API. I personally use Flash-Lite on the free tier.
