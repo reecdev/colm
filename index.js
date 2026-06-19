@@ -20,6 +20,13 @@ function startServer(port) {
 
     const wss = new WebSocketServer({ server });
 
+    // Periodic ping to prevent proxy timeouts from killing idle connections
+    const keepaliveInterval = setInterval(() => {
+        wss.clients.forEach((ws) => {
+            if (ws.readyState === 1) ws.ping();
+        });
+    }, 25000);
+
     pythonBridge.start();
 
     function handleFsList(ws, msg) {

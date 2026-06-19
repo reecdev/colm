@@ -48451,6 +48451,17 @@ Please report this to https://github.com/markedjs/marked.`, e) {
             "cohere-command-r-plus",
             "mistral-large-2"
           ]
+        },
+        inception: {
+          label: "InceptionLabs",
+          envKey: "INCEPTION_API_KEY",
+          baseUrl: "https://api.inceptionlabs.ai/v1",
+          defaultModel: "mercury-2",
+          models: [
+            "mercury-2",
+            "mercury-coder-small",
+            "mercury-edit-2"
+          ]
         }
       };
       if (typeof module !== "undefined" && module.exports) {
