@@ -95,16 +95,32 @@ export default function App() {
           setCells(msg.cells);
           break;
         case 'cell:output':
-          setCells(prev => prev.map(c =>
-            c.id === msg.cellId
-              ? { ...c, output: msg.output, executionCount: msg.executionCount, error: msg.error === true, images: msg.images || [] }
-              : c
-          ));
+          if (msg.stream) {
+            setCells(prev => prev.map(c =>
+              c.id === msg.cellId
+                ? { ...c, output: (c.output || '') + msg.token, executionCount: msg.executionCount, error: false, images: [] }
+                : c
+            ));
+          } else {
+            setCells(prev => prev.map(c =>
+              c.id === msg.cellId
+                ? { ...c, output: msg.output, executionCount: msg.executionCount, error: msg.error === true, images: msg.images || [] }
+                : c
+            ));
+          }
           break;
         case 'agent:reply':
           if (msg.done) {
-            const content = (streamingRef.current + (msg.token || '')).trim();
-            setMessages(prev => [...prev, { role: 'assistant', content, error: msg.error }]);
+            let content;
+            let error;
+            if (msg.error === 'Generation cancelled') {
+              content = '*Cancelled*';
+              error = null;
+            } else {
+              content = (streamingRef.current + (msg.token || '')).trim();
+              error = msg.error;
+            }
+            setMessages(prev => [...prev, { role: 'assistant', content, ...(error ? { error } : {}) }]);
             streamingRef.current = '';
             setStreamingMessage('');
             setIsThinking(false);
@@ -244,6 +260,10 @@ export default function App() {
       return next;
     });
   }, [send, model, provider, cells]);
+
+  const handleCancel = useCallback(() => {
+    send('agent:cancel');
+  }, [send]);
 
   const handleDownload = useCallback(() => {
     const nb = {
@@ -391,6 +411,7 @@ export default function App() {
             streamingMessage={streamingMessage}
             isThinking={isThinking}
             onSend={handleAgentMessage}
+            onCancel={handleCancel}
             agentStatus={agentStatus}
           />
         )}

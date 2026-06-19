@@ -141,23 +141,46 @@ function buildMessages(userText, history) {
   return messages;
 }
 
-async function apiPost(body) {
+async function apiPost(body, sendStatus, signal) {
   const url = `${body.baseUrl}/chat/completions`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${body.apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body.payload),
-  });
 
-  if (!response.ok) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${body.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body.payload),
+      signal,
+    });
+
+    if (response.ok) return response;
+
+    if (response.status === 429) {
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+      let seconds = 5;
+      const retryAfterHeader = response.headers.get('Retry-After');
+      if (retryAfterHeader) {
+        seconds = parseInt(retryAfterHeader);
+        if (isNaN(seconds)) seconds = 5;
+      } else {
+        try {
+          const errBody = await response.json();
+          if (errBody?.error?.retry_after) seconds = parseInt(errBody.error.retry_after) || 5;
+        } catch {}
+      }
+      seconds = Math.max(seconds, 1);
+      if (sendStatus) sendStatus(`Throttled, resuming in ${seconds}s`);
+      await new Promise(r => setTimeout(r, seconds * 1000));
+      continue;
+    }
+
     const text = await response.text();
     throw new Error(`API error ${response.status} from ${url}: ${text}`);
   }
 
-  return response;
+  throw new Error(`API rate limited after 3 retries from ${url}`);
 }
 
 async function* streamTokens(response) {
@@ -190,7 +213,7 @@ async function* streamTokens(response) {
   }
 }
 
-async function* streamChat(userText, history, model, apiKey, executeTool, baseUrl) {
+async function* streamChat(userText, history, model, apiKey, executeTool, baseUrl, sendStatus, signal) {
   const messages = buildMessages(userText, history);
   let currentMessages = [...messages];
   const maxRounds = 10;
@@ -210,7 +233,7 @@ async function* streamChat(userText, history, model, apiKey, executeTool, baseUr
           tools: TOOLS,
           tool_choice: 'auto',
         },
-      });
+      }, sendStatus, signal);
     } catch (err) {
       // If tool calling fails, fall back to plain streaming
       if (round === 0) {
@@ -223,7 +246,7 @@ async function* streamChat(userText, history, model, apiKey, executeTool, baseUr
             stream: true,
             max_tokens: 4096,
           },
-        });
+        }, sendStatus, signal);
         yield* streamTokens(fallback);
         return;
       }
@@ -285,7 +308,7 @@ async function* streamChat(userText, history, model, apiKey, executeTool, baseUr
           stream: true,
           max_tokens: 4096,
         },
-      });
+      }, sendStatus, signal);
       yield* streamTokens(streamResponse);
       return;
     }
@@ -301,7 +324,7 @@ async function* streamChat(userText, history, model, apiKey, executeTool, baseUr
       stream: true,
       max_tokens: 4096,
     },
-  });
+  }, sendStatus);
   yield* streamTokens(streamResponse);
 }
 

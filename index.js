@@ -59,24 +59,37 @@ function startServer(port) {
         execCounter++;
         const cellId = msg.cellId;
         const code = msg.code || '';
+        const count = execCounter;
+
+        const onOutput = (token) => {
+            ws.send(JSON.stringify({
+                type: 'cell:output',
+                cellId,
+                token,
+                stream: true,
+                executionCount: count,
+            }));
+        };
 
         try {
-            const result = await pythonBridge.execute(code);
+            const result = await pythonBridge.execute(code, onOutput);
             ws.send(JSON.stringify({
                 type: 'cell:output',
                 cellId,
                 output: result.output,
-                executionCount: execCounter,
+                executionCount: count,
                 error: result.error,
                 images: result.images || [],
+                done: true,
             }));
         } catch (err) {
             ws.send(JSON.stringify({
                 type: 'cell:output',
                 cellId,
                 output: `Error: ${err.message}`,
-                executionCount: execCounter,
+                executionCount: count,
                 error: true,
+                done: true,
             }));
         }
     }
@@ -101,7 +114,16 @@ function startServer(port) {
                     ws.send(JSON.stringify({ type: 'agent:status', status: `Running ${args.cellId}...` }));
                     const cell = notebookCells.find(c => c.id === args.cellId);
                     if (!cell) return { error: `Cell ${args.cellId} not found` };
-                    const result = await pythonBridge.execute(cell.content || '');
+                    const onRunOutput = (token) => {
+                        ws.send(JSON.stringify({
+                            type: 'cell:output',
+                            cellId: args.cellId,
+                            token,
+                            stream: true,
+                            executionCount: 0,
+                        }));
+                    };
+                    const result = await pythonBridge.execute(cell.content || '', onRunOutput);
                     cell.output = result.output;
                     cell.error = result.error || null;
                     cell.executionCount = null;
@@ -112,6 +134,7 @@ function startServer(port) {
                         executionCount: 0,
                         error: result.error || false,
                         images: result.images || [],
+                        done: true,
                     }));
                     return { output: result.output, error: result.error };
                 }
@@ -242,26 +265,51 @@ function startServer(port) {
             baseUrl = baseUrl.replace('{CLOUDFLARE_ACCOUNT_ID}', accountId);
         }
 
+        const sendStatus = (status) => {
+            ws.send(JSON.stringify({ type: 'agent:status', status }));
+        };
+
+        // Create abort controller for this request
+        const abortController = new AbortController();
+        ws._abortController = abortController;
+
         try {
-            const stream = streamChat(userText, history, msg.model, apiKey, executeTool, baseUrl);
+            const stream = streamChat(userText, history, msg.model, apiKey, executeTool, baseUrl, sendStatus, abortController.signal);
             for await (const token of stream) {
+                if (abortController.signal.aborted) break;
                 ws.send(JSON.stringify({
                     type: 'agent:reply',
                     token,
                     done: false,
                 }));
             }
-            ws.send(JSON.stringify({
-                type: 'agent:reply',
-                done: true,
-            }));
+            if (abortController.signal.aborted) {
+                ws.send(JSON.stringify({
+                    type: 'agent:reply',
+                    done: true,
+                    error: 'Generation cancelled',
+                }));
+            } else {
+                ws.send(JSON.stringify({
+                    type: 'agent:reply',
+                    done: true,
+                }));
+            }
         } catch (err) {
-            ws.send(JSON.stringify({
-                type: 'agent:reply',
-                token: `Error: ${err.message}`,
-                done: true,
-                error: true,
-            }));
+            if (err.name === 'AbortError' || abortController.signal.aborted) {
+                ws.send(JSON.stringify({
+                    type: 'agent:reply',
+                    done: true,
+                    error: 'Generation cancelled',
+                }));
+            } else {
+                ws.send(JSON.stringify({
+                    type: 'agent:reply',
+                    token: `Error: ${err.message}`,
+                    done: true,
+                    error: true,
+                }));
+            }
         }
     }
 
@@ -304,6 +352,12 @@ function startServer(port) {
                 case 'kernel:restart':
                     pythonBridge.restart();
                     ws.send(JSON.stringify({ type: 'kernel:status', status: 'restarted' }));
+                    break;
+
+                case 'agent:cancel':
+                    if (ws._abortController) {
+                        ws._abortController.abort();
+                    }
                     break;
 
                 default:

@@ -8,7 +8,7 @@ function MarkdownContent({ text }) {
   return <div className="message-content" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
-export default function ChatSidebar({ messages, streamingMessage, onSend, isThinking, agentStatus }) {
+export default function ChatSidebar({ messages, streamingMessage, onSend, onCancel, isThinking, agentStatus }) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
 
@@ -49,7 +49,7 @@ export default function ChatSidebar({ messages, streamingMessage, onSend, isThin
             <div className="message-label">CoLM</div>
             <div className="thinking-row">
               <div className="thinking-loader" />
-              {agentStatus && <span className="agent-status">{agentStatus}</span>}
+              {agentStatus && <span className={`agent-status ${agentStatus.startsWith('Throttled') ? 'status-throttled' : ''}`}>{agentStatus}</span>}
             </div>
           </div>
         )}
@@ -69,12 +69,20 @@ export default function ChatSidebar({ messages, streamingMessage, onSend, isThin
           onKeyDown={handleKeyDown}
           placeholder="Ask the AI..."
         />
-        <button type="submit" disabled={!input.trim()}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13" />
-            <polygon points="22 2 15 22 11 13 2 9 22 2" />
-          </svg>
-        </button>
+        {(isThinking || streamingMessage) ? (
+          <button type="button" className="btn-stop" onClick={onCancel}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="6" width="12" height="12" rx="2" />
+            </svg>
+          </button>
+        ) : (
+          <button type="submit" disabled={!input.trim()}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+          </button>
+        )}
       </form>
     </div>
   );

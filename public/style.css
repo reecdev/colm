@@ -740,6 +740,35 @@ input, select, textarea, button {
   height: 14px;
 }
 
+.btn-stop {
+  position: absolute;
+  bottom: 14px;
+  right: 16px;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--error-text);
+  border-radius: 4px;
+  background: var(--error-text);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+
+.btn-stop:hover {
+  opacity: 0.85;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.btn-stop svg {
+  width: 14px;
+  height: 14px;
+}
+
 /* CodeMirror autocomplete popup theming */
 .cm-tooltip-autocomplete {
   background: var(--bg) !important;
@@ -822,6 +851,11 @@ input, select, textarea, button {
   font-size: 0.85rem;
   white-space: nowrap;
   animation: pulse 1.5s ease-in-out infinite;
+}
+
+.status-throttled {
+  color: #4a9eff;
+  animation: none;
 }
 
 @keyframes pulse {

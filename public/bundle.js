@@ -48262,7 +48262,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     const html = g.parse(text || "");
     return /* @__PURE__ */ import_react3.default.createElement("div", { className: "message-content", dangerouslySetInnerHTML: { __html: html } });
   }
-  function ChatSidebar({ messages, streamingMessage, onSend, isThinking, agentStatus }) {
+  function ChatSidebar({ messages, streamingMessage, onSend, onCancel, isThinking, agentStatus }) {
     const [input, setInput] = (0, import_react3.useState)("");
     const messagesEndRef = (0, import_react3.useRef)(null);
     (0, import_react3.useEffect)(() => {
@@ -48280,7 +48280,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
         handleSubmit(e);
       }
     };
-    return /* @__PURE__ */ import_react3.default.createElement("div", { className: "sidebar" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "sidebar-messages" }, messages.length === 0 && !streamingMessage && !isThinking && /* @__PURE__ */ import_react3.default.createElement("div", { className: "sidebar-empty" }, /* @__PURE__ */ import_react3.default.createElement("strong", null, "What should we research today?")), messages.map((msg, i2) => /* @__PURE__ */ import_react3.default.createElement("div", { key: i2, className: `message message-${msg.role}${msg.error ? " message-error" : ""}` }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "message-label" }, msg.role === "user" ? "You" : "CoLM"), /* @__PURE__ */ import_react3.default.createElement(MarkdownContent, { text: msg.content }))), isThinking && !streamingMessage && /* @__PURE__ */ import_react3.default.createElement("div", { className: "message message-assistant" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "message-label" }, "CoLM"), /* @__PURE__ */ import_react3.default.createElement("div", { className: "thinking-row" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "thinking-loader" }), agentStatus && /* @__PURE__ */ import_react3.default.createElement("span", { className: "agent-status" }, agentStatus))), streamingMessage && /* @__PURE__ */ import_react3.default.createElement("div", { className: "message message-assistant" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "message-label" }, "CoLM"), /* @__PURE__ */ import_react3.default.createElement("div", { className: "message-content" }, streamingMessage, /* @__PURE__ */ import_react3.default.createElement("span", { className: "cursor-blink" }, "\u258A"))), /* @__PURE__ */ import_react3.default.createElement("div", { ref: messagesEndRef })), /* @__PURE__ */ import_react3.default.createElement("form", { className: "sidebar-input", onSubmit: handleSubmit }, /* @__PURE__ */ import_react3.default.createElement(
+    return /* @__PURE__ */ import_react3.default.createElement("div", { className: "sidebar" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "sidebar-messages" }, messages.length === 0 && !streamingMessage && !isThinking && /* @__PURE__ */ import_react3.default.createElement("div", { className: "sidebar-empty" }, /* @__PURE__ */ import_react3.default.createElement("strong", null, "What should we research today?")), messages.map((msg, i2) => /* @__PURE__ */ import_react3.default.createElement("div", { key: i2, className: `message message-${msg.role}${msg.error ? " message-error" : ""}` }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "message-label" }, msg.role === "user" ? "You" : "CoLM"), /* @__PURE__ */ import_react3.default.createElement(MarkdownContent, { text: msg.content }))), isThinking && !streamingMessage && /* @__PURE__ */ import_react3.default.createElement("div", { className: "message message-assistant" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "message-label" }, "CoLM"), /* @__PURE__ */ import_react3.default.createElement("div", { className: "thinking-row" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "thinking-loader" }), agentStatus && /* @__PURE__ */ import_react3.default.createElement("span", { className: `agent-status ${agentStatus.startsWith("Throttled") ? "status-throttled" : ""}` }, agentStatus))), streamingMessage && /* @__PURE__ */ import_react3.default.createElement("div", { className: "message message-assistant" }, /* @__PURE__ */ import_react3.default.createElement("div", { className: "message-label" }, "CoLM"), /* @__PURE__ */ import_react3.default.createElement("div", { className: "message-content" }, streamingMessage, /* @__PURE__ */ import_react3.default.createElement("span", { className: "cursor-blink" }, "\u258A"))), /* @__PURE__ */ import_react3.default.createElement("div", { ref: messagesEndRef })), /* @__PURE__ */ import_react3.default.createElement("form", { className: "sidebar-input", onSubmit: handleSubmit }, /* @__PURE__ */ import_react3.default.createElement(
       "textarea",
       {
         value: input,
@@ -48288,7 +48288,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
         onKeyDown: handleKeyDown,
         placeholder: "Ask the AI..."
       }
-    ), /* @__PURE__ */ import_react3.default.createElement("button", { type: "submit", disabled: !input.trim() }, /* @__PURE__ */ import_react3.default.createElement("svg", { width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, /* @__PURE__ */ import_react3.default.createElement("line", { x1: "22", y1: "2", x2: "11", y2: "13" }), /* @__PURE__ */ import_react3.default.createElement("polygon", { points: "22 2 15 22 11 13 2 9 22 2" })))));
+    ), isThinking || streamingMessage ? /* @__PURE__ */ import_react3.default.createElement("button", { type: "button", className: "btn-stop", onClick: onCancel }, /* @__PURE__ */ import_react3.default.createElement("svg", { width: "20", height: "20", viewBox: "0 0 24 24", fill: "currentColor" }, /* @__PURE__ */ import_react3.default.createElement("rect", { x: "6", y: "6", width: "12", height: "12", rx: "2" }))) : /* @__PURE__ */ import_react3.default.createElement("button", { type: "submit", disabled: !input.trim() }, /* @__PURE__ */ import_react3.default.createElement("svg", { width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, /* @__PURE__ */ import_react3.default.createElement("line", { x1: "22", y1: "2", x2: "11", y2: "13" }), /* @__PURE__ */ import_react3.default.createElement("polygon", { points: "22 2 15 22 11 13 2 9 22 2" })))));
   }
   var import_react3;
   var init_ChatSidebar = __esm({
@@ -48390,9 +48390,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
             "llama-3.3-70b-versatile",
             "llama-4-scout",
             "qwen3-32b",
-            "llama-3.1-8b-instant",
-            "gpt-oss-120b",
-            "gpt-oss-20b"
+            "llama-3.1-8b-instant"
           ]
         },
         opencodezen: {
@@ -48428,13 +48426,19 @@ Please report this to https://github.com/markedjs/marked.`, e) {
           label: "Cloudflare",
           envKey: "CLOUDFLARE_API_TOKEN",
           baseUrl: "https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/v1",
-          defaultModel: "@cf/meta/llama-3.1-8b-instruct",
+          defaultModel: "meta/llama-4-scout-17b-16e-instruct",
           models: [
-            "@cf/meta/llama-3.1-8b-instruct",
-            "@cf/meta/llama-3-8b-instruct",
-            "@cf/meta/llama-3-70b-instruct",
-            "@cf/qwen/qwen1.5-14b-chat",
-            "@cf/mistral/mistral-7b-instruct-v0.2"
+            "meta/llama-4-scout-17b-16e-instruct",
+            "meta/llama-3.3-70b-instruct-fp8-fast",
+            "meta/llama-3.1-8b-instruct-fast",
+            "mistral/mistral-small-3.1-24b-instruct",
+            "qwen/qwen3-30b-a3b-fp8",
+            "qwen/qwq-32b",
+            "qwen/qwen2.5-coder-32b-instruct",
+            "deepseek-ai/deepseek-r1-distill-qwen-32b",
+            "moonshotai/kimi-k2.6",
+            "openai/gpt-oss-120b",
+            "google/gemma-4-26b-a4b-it"
           ]
         },
         github: {
@@ -48444,12 +48448,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
           defaultModel: "gpt-4o-mini",
           models: [
             "gpt-4o-mini",
-            "gpt-4o",
-            "meta-llama-3.1-405b-instruct",
-            "meta-llama-3.1-70b-instruct",
-            "meta-llama-3.1-8b-instruct",
-            "cohere-command-r-plus",
-            "mistral-large-2"
+            "gpt-4o"
           ]
         },
         inception: {
@@ -48458,9 +48457,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
           baseUrl: "https://api.inceptionlabs.ai/v1",
           defaultModel: "mercury-2",
           models: [
-            "mercury-2",
-            "mercury-coder-small",
-            "mercury-edit-2"
+            "mercury-2"
           ]
         }
       };
@@ -48771,14 +48768,28 @@ Please report this to https://github.com/markedjs/marked.`, e) {
             setCells(msg.cells);
             break;
           case "cell:output":
-            setCells((prev) => prev.map(
-              (c) => c.id === msg.cellId ? { ...c, output: msg.output, executionCount: msg.executionCount, error: msg.error === true, images: msg.images || [] } : c
-            ));
+            if (msg.stream) {
+              setCells((prev) => prev.map(
+                (c) => c.id === msg.cellId ? { ...c, output: (c.output || "") + msg.token, executionCount: msg.executionCount, error: false, images: [] } : c
+              ));
+            } else {
+              setCells((prev) => prev.map(
+                (c) => c.id === msg.cellId ? { ...c, output: msg.output, executionCount: msg.executionCount, error: msg.error === true, images: msg.images || [] } : c
+              ));
+            }
             break;
           case "agent:reply":
             if (msg.done) {
-              const content2 = (streamingRef.current + (msg.token || "")).trim();
-              setMessages((prev) => [...prev, { role: "assistant", content: content2, error: msg.error }]);
+              let content2;
+              let error;
+              if (msg.error === "Generation cancelled") {
+                content2 = "*Cancelled*";
+                error = null;
+              } else {
+                content2 = (streamingRef.current + (msg.token || "")).trim();
+                error = msg.error;
+              }
+              setMessages((prev) => [...prev, { role: "assistant", content: content2, ...error ? { error } : {} }]);
               streamingRef.current = "";
               setStreamingMessage("");
               setIsThinking(false);
@@ -48908,6 +48919,9 @@ Please report this to https://github.com/markedjs/marked.`, e) {
         return next;
       });
     }, [send, model, provider, cells]);
+    const handleCancel = (0, import_react6.useCallback)(() => {
+      send("agent:cancel");
+    }, [send]);
     const handleDownload = (0, import_react6.useCallback)(() => {
       const nb = {
         nbformat: 4,
@@ -49051,6 +49065,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
         streamingMessage,
         isThinking,
         onSend: handleAgentMessage,
+        onCancel: handleCancel,
         agentStatus
       }
     )));

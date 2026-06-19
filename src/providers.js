@@ -87,8 +87,6 @@ const PROVIDERS = {
       'llama-4-scout',
       'qwen3-32b',
       'llama-3.1-8b-instant',
-      'gpt-oss-120b',
-      'gpt-oss-20b',
     ],
   },
   opencodezen: {
@@ -124,13 +122,19 @@ const PROVIDERS = {
     label: 'Cloudflare',
     envKey: 'CLOUDFLARE_API_TOKEN',
     baseUrl: 'https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/v1',
-    defaultModel: '@cf/meta/llama-3.1-8b-instruct',
+    defaultModel: 'meta/llama-4-scout-17b-16e-instruct',
     models: [
-      '@cf/meta/llama-3.1-8b-instruct',
-      '@cf/meta/llama-3-8b-instruct',
-      '@cf/meta/llama-3-70b-instruct',
-      '@cf/qwen/qwen1.5-14b-chat',
-      '@cf/mistral/mistral-7b-instruct-v0.2',
+      'meta/llama-4-scout-17b-16e-instruct',
+      'meta/llama-3.3-70b-instruct-fp8-fast',
+      'meta/llama-3.1-8b-instruct-fast',
+      'mistral/mistral-small-3.1-24b-instruct',
+      'qwen/qwen3-30b-a3b-fp8',
+      'qwen/qwq-32b',
+      'qwen/qwen2.5-coder-32b-instruct',
+      'deepseek-ai/deepseek-r1-distill-qwen-32b',
+      'moonshotai/kimi-k2.6',
+      'openai/gpt-oss-120b',
+      'google/gemma-4-26b-a4b-it',
     ],
   },
   github: {
@@ -141,11 +145,6 @@ const PROVIDERS = {
     models: [
       'gpt-4o-mini',
       'gpt-4o',
-      'meta-llama-3.1-405b-instruct',
-      'meta-llama-3.1-70b-instruct',
-      'meta-llama-3.1-8b-instruct',
-      'cohere-command-r-plus',
-      'mistral-large-2',
     ],
   },
   inception: {
@@ -155,8 +154,6 @@ const PROVIDERS = {
     defaultModel: 'mercury-2',
     models: [
       'mercury-2',
-      'mercury-coder-small',
-      'mercury-edit-2',
     ],
   },
 };

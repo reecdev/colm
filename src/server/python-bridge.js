@@ -4,6 +4,7 @@ const path = require('path');
 let pythonProcess = null;
 let pendingResolve = null;
 let pendingReject = null;
+let pendingOnOutput = null;
 let buffer = '';
 
 function start() {
@@ -20,15 +21,22 @@ function start() {
         for (const line of lines) {
             if (!line.trim()) continue;
             try {
-                const result = JSON.parse(line);
-                if (pendingResolve) {
-                    const resolve = pendingResolve;
-                    pendingResolve = null;
-                    resolve({
-                        output: result.output || '',
-                        error: result.error === true,
-                        images: result.images || [],
-                    });
+                const msg = JSON.parse(line);
+                if (msg.type === 'stream') {
+                    if (pendingOnOutput) {
+                        pendingOnOutput(msg.text || '');
+                    }
+                } else if (msg.type === 'result') {
+                    if (pendingResolve) {
+                        const resolve = pendingResolve;
+                        pendingResolve = null;
+                        pendingOnOutput = null;
+                        resolve({
+                            output: msg.output || '',
+                            error: msg.error === true,
+                            images: msg.images || [],
+                        });
+                    }
                 }
             } catch {
                 // malformed JSON, skip
@@ -46,6 +54,7 @@ function start() {
         if (pendingReject) {
             pendingReject(new Error('Python process exited'));
             pendingReject = null;
+            pendingOnOutput = null;
         }
     });
 
@@ -55,11 +64,12 @@ function start() {
         if (pendingReject) {
             pendingReject(err);
             pendingReject = null;
+            pendingOnOutput = null;
         }
     });
 }
 
-function execute(code) {
+function execute(code, onOutput) {
     return new Promise((resolve, reject) => {
         if (!pythonProcess) {
             reject(new Error('Python process not running'));
@@ -68,6 +78,7 @@ function execute(code) {
 
         pendingResolve = resolve;
         pendingReject = reject;
+        pendingOnOutput = onOutput || null;
 
         const msg = JSON.stringify({ type: 'execute', code }) + '\n';
         pythonProcess.stdin.write(msg);
@@ -81,6 +92,7 @@ function interrupt() {
             pendingReject(new Error('Execution interrupted'));
             pendingReject = null;
             pendingResolve = null;
+            pendingOnOutput = null;
         }
     }
 }
@@ -99,6 +111,7 @@ function stop() {
         pendingReject(new Error('Kernel stopped'));
         pendingReject = null;
         pendingResolve = null;
+        pendingOnOutput = null;
     }
 }
 

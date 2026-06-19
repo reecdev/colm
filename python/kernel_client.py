@@ -3,7 +3,7 @@ import sys
 import json
 import traceback
 import base64
-from io import StringIO, BytesIO
+from io import BytesIO
 
 # Set matplotlib to headless backend
 try:
@@ -31,30 +31,63 @@ def capture_figures():
         plt.close(fig)
     return images
 
+class StreamingWriter:
+    def __init__(self, original, stream_type='stdout'):
+        self._original = original
+        self._stream_type = stream_type
+        self._buffer = ''
+        self._lines = []
+
+    def write(self, text):
+        self._buffer += text
+        self._lines.append(text)
+        while '\n' in self._buffer:
+            line, self._buffer = self._buffer.split('\n', 1)
+            if line:
+                msg = json.dumps({"type": "stream", "text": line + "\n", "stream": self._stream_type})
+                self._original.write(msg + '\n')
+                self._original.flush()
+
+    def flush(self):
+        if self._buffer:
+            msg = json.dumps({"type": "stream", "text": self._buffer, "stream": self._stream_type})
+            self._original.write(msg + '\n')
+            self._original.flush()
+            self._buffer = ''
+        self._original.flush()
+
+    def getvalue(self):
+        return ''.join(self._lines)
+
+    def isatty(self):
+        return False
+
 def execute_code(source):
     old_stdout = sys.stdout
     old_stderr = sys.stderr
 
-    out = StringIO()
-    err = StringIO()
-    sys.stdout = out
-    sys.stderr = err
+    out_writer = StreamingWriter(old_stdout, 'stdout')
+    err_writer = StreamingWriter(old_stderr, 'stderr')
+    sys.stdout = out_writer
+    sys.stderr = err_writer
 
     try:
         exec(source, namespace)
         error = False
     except KeyboardInterrupt:
-        err.write("KeyboardInterrupt\n")
+        err_writer.write("KeyboardInterrupt\n")
         error = True
     except Exception:
         traceback.print_exc()
         error = True
     finally:
+        sys.stdout.flush()
+        sys.stderr.flush()
         sys.stdout = old_stdout
         sys.stderr = old_stderr
 
     images = capture_figures()
-    output = err.getvalue() if error else out.getvalue()
+    output = err_writer.getvalue() if error else out_writer.getvalue()
     if error and not output:
         output = "Execution interrupted"
 
