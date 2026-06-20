@@ -98,6 +98,7 @@ export default function App() {
           break;
         case 'cell:output':
           if (msg.stream) {
+            setRunningCellId(msg.cellId);
             setCells(prev => prev.map(c =>
               c.id === msg.cellId
                 ? { ...c, output: (c.output || '') + msg.token, executionCount: msg.executionCount, error: false, images: [] }
@@ -109,6 +110,9 @@ export default function App() {
                 ? { ...c, output: msg.output, executionCount: msg.executionCount, error: msg.error === true, images: msg.images || [] }
                 : c
             ));
+            if (msg.done) {
+              setRunningCellId(prev => prev === msg.cellId ? null : prev);
+            }
           }
           break;
         case 'agent:reply':
@@ -171,6 +175,7 @@ export default function App() {
         case 'kernel:status':
           if (msg.status === 'restarted') {
             setCells(prev => prev.map(c => ({ ...c, output: null, executionCount: null, error: null })));
+            setRunningCellId(null);
           }
           break;
         case 'providers:status':

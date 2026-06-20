@@ -2,6 +2,8 @@ import React, { useRef, useEffect } from 'react';
 import { EditorView, basicSetup } from 'codemirror';
 import { EditorState } from '@codemirror/state';
 import { python } from '@codemirror/lang-python';
+import { keymap } from '@codemirror/view';
+import { indentWithTab } from '@codemirror/commands';
 
 export default function Cell({ cell, selected, isRunning, onSelect, onUpdate, onExecute, onDelete, onInterrupt }) {
   const editorRef = useRef(null);
@@ -15,6 +17,7 @@ export default function Cell({ cell, selected, isRunning, onSelect, onUpdate, on
       extensions: [
         basicSetup,
         python(),
+        keymap.of([indentWithTab]),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             onUpdate(update.state.doc.toString());

@@ -40275,7 +40275,7 @@
       };
     });
   }
-  var toggleComment, toggleLineComment, toggleBlockComment, toggleBlockCommentByLine, SearchMargin, fromHistory, isolateHistory, invertedEffects, historyConfig, historyField_, undo, redo, undoSelection, redoSelection, HistEvent, none2, MaxSelectionsPerEvent, joinableUserEvent, HistoryState, historyKeymap, cursorCharLeft, cursorCharRight, cursorGroupLeft, cursorGroupRight, segmenter, cursorSyntaxLeft, cursorSyntaxRight, cursorLineUp, cursorLineDown, cursorPageUp, cursorPageDown, cursorLineBoundaryForward, cursorLineBoundaryBackward, cursorLineBoundaryLeft, cursorLineBoundaryRight, cursorLineStart, cursorLineEnd, cursorMatchingBracket, selectCharLeft, selectCharRight, selectGroupLeft, selectGroupRight, selectSyntaxLeft, selectSyntaxRight, selectLineUp, selectLineDown, selectPageUp, selectPageDown, selectLineBoundaryForward, selectLineBoundaryBackward, selectLineBoundaryLeft, selectLineBoundaryRight, selectLineStart, selectLineEnd, cursorDocStart, cursorDocEnd, selectDocStart, selectDocEnd, selectAll, selectLine, selectParentSyntax, addCursorAbove, addCursorBelow, simplifySelection, deleteByChar, deleteCharBackward, deleteCharForward, deleteByGroup, deleteGroupBackward, deleteGroupForward, deleteToLineEnd, deleteLineBoundaryBackward, deleteLineBoundaryForward, splitLine, transposeChars, moveLineUp, moveLineDown, copyLineUp, copyLineDown, deleteLine, insertNewlineAndIndent, insertBlankLine, indentSelection, indentMore, indentLess, toggleTabFocusMode, emacsStyleKeymap, standardKeymap, defaultKeymap;
+  var toggleComment, toggleLineComment, toggleBlockComment, toggleBlockCommentByLine, SearchMargin, fromHistory, isolateHistory, invertedEffects, historyConfig, historyField_, undo, redo, undoSelection, redoSelection, HistEvent, none2, MaxSelectionsPerEvent, joinableUserEvent, HistoryState, historyKeymap, cursorCharLeft, cursorCharRight, cursorGroupLeft, cursorGroupRight, segmenter, cursorSyntaxLeft, cursorSyntaxRight, cursorLineUp, cursorLineDown, cursorPageUp, cursorPageDown, cursorLineBoundaryForward, cursorLineBoundaryBackward, cursorLineBoundaryLeft, cursorLineBoundaryRight, cursorLineStart, cursorLineEnd, cursorMatchingBracket, selectCharLeft, selectCharRight, selectGroupLeft, selectGroupRight, selectSyntaxLeft, selectSyntaxRight, selectLineUp, selectLineDown, selectPageUp, selectPageDown, selectLineBoundaryForward, selectLineBoundaryBackward, selectLineBoundaryLeft, selectLineBoundaryRight, selectLineStart, selectLineEnd, cursorDocStart, cursorDocEnd, selectDocStart, selectDocEnd, selectAll, selectLine, selectParentSyntax, addCursorAbove, addCursorBelow, simplifySelection, deleteByChar, deleteCharBackward, deleteCharForward, deleteByGroup, deleteGroupBackward, deleteGroupForward, deleteToLineEnd, deleteLineBoundaryBackward, deleteLineBoundaryForward, splitLine, transposeChars, moveLineUp, moveLineDown, copyLineUp, copyLineDown, deleteLine, insertNewlineAndIndent, insertBlankLine, indentSelection, indentMore, indentLess, toggleTabFocusMode, emacsStyleKeymap, standardKeymap, defaultKeymap, indentWithTab;
   var init_dist6 = __esm({
     "node_modules/@codemirror/commands/dist/index.js"() {
       init_dist();
@@ -40793,6 +40793,7 @@
         { key: "Alt-A", run: toggleBlockComment },
         { key: "Ctrl-m", mac: "Shift-Alt-m", run: toggleTabFocusMode }
       ].concat(standardKeymap);
+      indentWithTab = { key: "Tab", run: indentMore, shift: indentLess };
     }
   });
 
@@ -46922,6 +46923,7 @@
         extensions: [
           basicSetup,
           python(),
+          keymap.of([indentWithTab]),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               onUpdate(update.state.doc.toString());
@@ -46987,6 +46989,8 @@
       init_dist10();
       init_dist();
       init_dist13();
+      init_dist2();
+      init_dist6();
     }
   });
 
@@ -48796,6 +48800,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
             break;
           case "cell:output":
             if (msg.stream) {
+              setRunningCellId(msg.cellId);
               setCells((prev) => prev.map(
                 (c) => c.id === msg.cellId ? { ...c, output: (c.output || "") + msg.token, executionCount: msg.executionCount, error: false, images: [] } : c
               ));
@@ -48803,6 +48808,9 @@ Please report this to https://github.com/markedjs/marked.`, e) {
               setCells((prev) => prev.map(
                 (c) => c.id === msg.cellId ? { ...c, output: msg.output, executionCount: msg.executionCount, error: msg.error === true, images: msg.images || [] } : c
               ));
+              if (msg.done) {
+                setRunningCellId((prev) => prev === msg.cellId ? null : prev);
+              }
             }
             break;
           case "agent:reply":
@@ -48865,6 +48873,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
           case "kernel:status":
             if (msg.status === "restarted") {
               setCells((prev) => prev.map((c) => ({ ...c, output: null, executionCount: null, error: null })));
+              setRunningCellId(null);
             }
             break;
           case "providers:status":
