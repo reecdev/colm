@@ -13,6 +13,9 @@ try:
 except ImportError:
     plt = None
 
+import builtins
+_original_print = builtins.print
+
 namespace = {}
 
 def capture_figures():
@@ -31,9 +34,26 @@ def capture_figures():
         plt.close(fig)
     return images
 
+def _capture_display_obj(obj, images_list):
+    """Try to extract PNG/JPEG data from a displayable object. Returns True if captured."""
+    for attr in ('_repr_png_', '_repr_jpeg_'):
+        fn = getattr(obj, attr, None)
+        if fn:
+            try:
+                data = fn()
+                if data:
+                    if isinstance(data, bytes):
+                        b64 = base64.b64encode(data).decode('utf-8')
+                    else:
+                        b64 = str(data)
+                    images_list.append(b64)
+                    return True
+            except Exception:
+                pass
+    return False
+
 class StreamingWriter:
-    def __init__(self, original, stream_type='stdout'):
-        self._original = original
+    def __init__(self, stream_type='stdout'):
         self._stream_type = stream_type
         self._buffer = ''
         self._lines = []
@@ -45,16 +65,16 @@ class StreamingWriter:
             line, self._buffer = self._buffer.split('\n', 1)
             if line:
                 msg = json.dumps({"type": "stream", "text": line + "\n", "stream": self._stream_type})
-                self._original.write(msg + '\n')
-                self._original.flush()
+                sys.__stdout__.write(msg + '\n')
+                sys.__stdout__.flush()
 
     def flush(self):
         if self._buffer:
             msg = json.dumps({"type": "stream", "text": self._buffer, "stream": self._stream_type})
-            self._original.write(msg + '\n')
-            self._original.flush()
+            sys.__stdout__.write(msg + '\n')
+            sys.__stdout__.flush()
             self._buffer = ''
-        self._original.flush()
+        sys.__stdout__.flush()
 
     def getvalue(self):
         return ''.join(self._lines)
@@ -66,10 +86,31 @@ def execute_code(source):
     old_stdout = sys.stdout
     old_stderr = sys.stderr
 
-    out_writer = StreamingWriter(old_stdout, 'stdout')
-    err_writer = StreamingWriter(old_stderr, 'stderr')
+    out_writer = StreamingWriter('stdout')
+    err_writer = StreamingWriter('stderr')
     sys.stdout = out_writer
     sys.stderr = err_writer
+
+    # Capture IPython display images via monkeypatched print
+    display_images = []
+
+    def _capture_print(*objs, **kwargs):
+        text_objs = []
+        captured_any = False
+        for obj in objs:
+            if _capture_display_obj(obj, display_images):
+                captured_any = True
+            else:
+                text_objs.append(obj)
+        if text_objs:
+            _original_print(*text_objs, **kwargs)
+        elif captured_any and not text_objs:
+            # All objects were images, print nothing
+            pass
+        else:
+            _original_print(*objs, **kwargs)
+
+    builtins.print = _capture_print
 
     try:
         exec(source, namespace)
@@ -85,8 +126,9 @@ def execute_code(source):
         sys.stderr.flush()
         sys.stdout = old_stdout
         sys.stderr = old_stderr
+        builtins.print = _original_print
 
-    images = capture_figures()
+    images = capture_figures() + display_images
     output = err_writer.getvalue() if error else out_writer.getvalue()
     if error and not output:
         output = "Execution interrupted"
