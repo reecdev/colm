@@ -48426,19 +48426,20 @@ Please report this to https://github.com/markedjs/marked.`, e) {
           label: "Cloudflare",
           envKey: "CLOUDFLARE_API_TOKEN",
           baseUrl: "https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/v1",
-          defaultModel: "meta/llama-4-scout-17b-16e-instruct",
+          defaultModel: "@cf/meta/llama-4-scout-17b-16e-instruct",
           models: [
-            "meta/llama-4-scout-17b-16e-instruct",
-            "meta/llama-3.3-70b-instruct-fp8-fast",
-            "meta/llama-3.1-8b-instruct-fast",
-            "mistral/mistral-small-3.1-24b-instruct",
-            "qwen/qwen3-30b-a3b-fp8",
-            "qwen/qwq-32b",
-            "qwen/qwen2.5-coder-32b-instruct",
-            "deepseek-ai/deepseek-r1-distill-qwen-32b",
-            "moonshotai/kimi-k2.6",
-            "openai/gpt-oss-120b",
-            "google/gemma-4-26b-a4b-it"
+            "@cf/meta/llama-4-scout-17b-16e-instruct",
+            "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+            "@cf/meta/llama-3.1-8b-instruct-fp8",
+            "@cf/mistralai/mistral-small-3.1-24b-instruct",
+            "@cf/qwen/qwen3-30b-a3b-fp8",
+            "@cf/qwen/qwq-32b",
+            "@cf/qwen/qwen2.5-coder-32b-instruct",
+            "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
+            "@cf/moonshotai/kimi-k2.6",
+            "@cf/openai/gpt-oss-120b",
+            "@cf/google/gemma-4-26b-a4b-it",
+            "@cf/nvidia/nemotron-3-120b-a12b"
           ]
         },
         github: {
