@@ -48460,6 +48460,25 @@ Please report this to https://github.com/markedjs/marked.`, e) {
           models: [
             "mercury-2"
           ]
+        },
+        llm7: {
+          label: "LLM7",
+          envKey: "LLM7_API_KEY",
+          baseUrl: "https://api.llm7.io/v1",
+          defaultModel: "default",
+          models: [
+            "default",
+            "fast",
+            "pro",
+            "qwen3-235b",
+            "mistral-small-3.2",
+            "codestral-latest",
+            "kimi-k2.6",
+            "minimax-m2.7",
+            "GLM-4.6V-Flash",
+            "devstral-small-2:24b",
+            "deepseek-v3.1:671b-terminus"
+          ]
         }
       };
       if (typeof module !== "undefined" && module.exports) {
