@@ -93,8 +93,8 @@ export default function Cell({ cell, selected, onSelect, onUpdate, onExecute, on
           <pre>{cell.output}</pre>
           {cell.images && cell.images.length > 0 && (
             <div className="cell-output-images">
-              {cell.images.map((b64, i) => (
-                <img key={i} src={`data:image/png;base64,${b64}`} alt={`Plot ${i + 1}`} className="cell-output-image" />
+              {cell.images.map((img, i) => (
+                <img key={i} src={img.startsWith('data:') ? img : `data:image/png;base64,${img}`} alt={`Image ${i + 1}`} className="cell-output-image" />
               ))}
             </div>
           )}

@@ -35,8 +35,30 @@ def capture_figures():
     return images
 
 def _capture_display_obj(obj, images_list):
-    """Try to extract PNG/JPEG data from a displayable object. Returns True if captured."""
-    for attr in ('_repr_png_', '_repr_jpeg_'):
+    """Try to extract image data from a displayable object. Returns True if captured."""
+    # Try mimebundle first (handles all MIME types including GIF)
+    mimebundle = getattr(obj, '_repr_mimebundle_', None)
+    if mimebundle:
+        try:
+            bundle = mimebundle()
+            if bundle:
+                # _repr_mimebundle_ returns (data_dict, metadata_dict)
+                data_dict = bundle[0] if isinstance(bundle, tuple) else bundle
+                if data_dict:
+                    for mime in ('image/png', 'image/jpeg', 'image/gif', 'image/webp'):
+                        data = data_dict.get(mime)
+                        if data:
+                            if isinstance(data, bytes):
+                                b64 = base64.b64encode(data).decode('utf-8')
+                            else:
+                                b64 = str(data)
+                            images_list.append(f'data:{mime};base64,{b64}')
+                            return True
+        except Exception:
+            pass
+
+    # Fallback to individual methods
+    for attr, mime in (('_repr_png_', 'image/png'), ('_repr_jpeg_', 'image/jpeg')):
         fn = getattr(obj, attr, None)
         if fn:
             try:
@@ -46,7 +68,7 @@ def _capture_display_obj(obj, images_list):
                         b64 = base64.b64encode(data).decode('utf-8')
                     else:
                         b64 = str(data)
-                    images_list.append(b64)
+                    images_list.append(f'data:{mime};base64,{b64}')
                     return True
             except Exception:
                 pass
@@ -132,6 +154,8 @@ def execute_code(source):
     output = err_writer.getvalue() if error else out_writer.getvalue()
     if error and not output:
         output = "Execution interrupted"
+    elif not error and not output:
+        output = "Success"
 
     return {
         "output": output,
