@@ -1,7 +1,7 @@
 import React from 'react';
 import Cell from './Cell';
 
-export default function Notebook({ cells, activeCellId, onCellSelect, onCellUpdate, onCellExecute, onCellDelete, onCellAdd }) {
+export default function Notebook({ cells, activeCellId, runningCellId, onCellSelect, onCellUpdate, onCellExecute, onCellDelete, onCellAdd, onCellInterrupt }) {
   return (
     <div className="notebook">
       {cells.map((cell, i) => (
@@ -9,11 +9,13 @@ export default function Notebook({ cells, activeCellId, onCellSelect, onCellUpda
           key={cell.id}
           cell={cell}
           selected={cell.id === activeCellId}
+          isRunning={cell.id === runningCellId}
           index={i}
           onSelect={() => onCellSelect(cell.id)}
           onUpdate={(content, type) => onCellUpdate(cell.id, content, type)}
           onExecute={() => onCellExecute(cell.id)}
           onDelete={() => onCellDelete(cell.id)}
+          onInterrupt={onCellInterrupt}
           onAddBefore={(type) => onCellAdd(type, i)}
           onAddAfter={(type) => onCellAdd(type, i + 1)}
         />

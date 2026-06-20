@@ -3,7 +3,7 @@ import { EditorView, basicSetup } from 'codemirror';
 import { EditorState } from '@codemirror/state';
 import { python } from '@codemirror/lang-python';
 
-export default function Cell({ cell, selected, onSelect, onUpdate, onExecute, onDelete }) {
+export default function Cell({ cell, selected, isRunning, onSelect, onUpdate, onExecute, onDelete, onInterrupt }) {
   const editorRef = useRef(null);
   const viewRef = useRef(null);
 
@@ -67,14 +67,24 @@ export default function Cell({ cell, selected, onSelect, onUpdate, onExecute, on
   }, [cell.content]);
 
   return (
-    <div className={`cell ${selected ? 'cell-selected' : ''}`} onClick={onSelect}>
+    <div className={`cell ${selected ? 'cell-selected' : ''} ${isRunning ? 'cell-running' : ''}`} onClick={onSelect}>
       <div className="cell-header">
-        <span className="cell-type-label">{cell.executionCount ? `[${cell.executionCount}]` : '   '} {cell.type}</span>
+        <span className="cell-type-label">
+          {isRunning ? <span className="running-spinner" /> : null}
+          {cell.executionCount ? `[${cell.executionCount}]` : '   '} {cell.type}
+        </span>
         <div className="cell-header-spacer" />
-        {cell.type === 'code' && (
+        {cell.type === 'code' && !isRunning && (
           <button className="cell-btn cell-btn-run" onClick={(e) => { e.stopPropagation(); onExecute(); }} title="Run cell">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <polygon points="5,3 19,12 5,21" />
+            </svg>
+          </button>
+        )}
+        {cell.type === 'code' && isRunning && (
+          <button className="cell-btn cell-btn-stop" onClick={(e) => { e.stopPropagation(); onInterrupt(); }} title="Interrupt kernel">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="6" width="12" height="12" rx="2" />
             </svg>
           </button>
         )}

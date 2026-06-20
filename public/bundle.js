@@ -46912,7 +46912,7 @@
   });
 
   // src/frontend/components/Cell.jsx
-  function Cell({ cell, selected, onSelect, onUpdate, onExecute, onDelete }) {
+  function Cell({ cell, selected, isRunning, onSelect, onUpdate, onExecute, onDelete, onInterrupt }) {
     const editorRef = (0, import_react.useRef)(null);
     const viewRef = (0, import_react.useRef)(null);
     (0, import_react.useEffect)(() => {
@@ -46969,10 +46969,13 @@
         }
       }
     }, [cell.content]);
-    return /* @__PURE__ */ import_react.default.createElement("div", { className: `cell ${selected ? "cell-selected" : ""}`, onClick: onSelect }, /* @__PURE__ */ import_react.default.createElement("div", { className: "cell-header" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "cell-type-label" }, cell.executionCount ? `[${cell.executionCount}]` : "   ", " ", cell.type), /* @__PURE__ */ import_react.default.createElement("div", { className: "cell-header-spacer" }), cell.type === "code" && /* @__PURE__ */ import_react.default.createElement("button", { className: "cell-btn cell-btn-run", onClick: (e) => {
+    return /* @__PURE__ */ import_react.default.createElement("div", { className: `cell ${selected ? "cell-selected" : ""} ${isRunning ? "cell-running" : ""}`, onClick: onSelect }, /* @__PURE__ */ import_react.default.createElement("div", { className: "cell-header" }, /* @__PURE__ */ import_react.default.createElement("span", { className: "cell-type-label" }, isRunning ? /* @__PURE__ */ import_react.default.createElement("span", { className: "running-spinner" }) : null, cell.executionCount ? `[${cell.executionCount}]` : "   ", " ", cell.type), /* @__PURE__ */ import_react.default.createElement("div", { className: "cell-header-spacer" }), cell.type === "code" && !isRunning && /* @__PURE__ */ import_react.default.createElement("button", { className: "cell-btn cell-btn-run", onClick: (e) => {
       e.stopPropagation();
       onExecute();
-    }, title: "Run cell" }, /* @__PURE__ */ import_react.default.createElement("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "currentColor" }, /* @__PURE__ */ import_react.default.createElement("polygon", { points: "5,3 19,12 5,21" }))), /* @__PURE__ */ import_react.default.createElement("button", { className: "cell-btn cell-btn-del", onClick: (e) => {
+    }, title: "Run cell" }, /* @__PURE__ */ import_react.default.createElement("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "currentColor" }, /* @__PURE__ */ import_react.default.createElement("polygon", { points: "5,3 19,12 5,21" }))), cell.type === "code" && isRunning && /* @__PURE__ */ import_react.default.createElement("button", { className: "cell-btn cell-btn-stop", onClick: (e) => {
+      e.stopPropagation();
+      onInterrupt();
+    }, title: "Interrupt kernel" }, /* @__PURE__ */ import_react.default.createElement("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "currentColor" }, /* @__PURE__ */ import_react.default.createElement("rect", { x: "6", y: "6", width: "12", height: "12", rx: "2" }))), /* @__PURE__ */ import_react.default.createElement("button", { className: "cell-btn cell-btn-del", onClick: (e) => {
       e.stopPropagation();
       onDelete();
     }, title: "Delete cell" }, /* @__PURE__ */ import_react.default.createElement("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" }, /* @__PURE__ */ import_react.default.createElement("line", { x1: "18", y1: "6", x2: "6", y2: "18" }), /* @__PURE__ */ import_react.default.createElement("line", { x1: "6", y1: "6", x2: "18", y2: "18" })))), /* @__PURE__ */ import_react.default.createElement("div", { className: "cell-editor", ref: editorRef }), cell.output !== null && /* @__PURE__ */ import_react.default.createElement("div", { className: `cell-output ${cell.error ? "cell-output-error" : ""}` }, /* @__PURE__ */ import_react.default.createElement("pre", null, cell.output), cell.images && cell.images.length > 0 && /* @__PURE__ */ import_react.default.createElement("div", { className: "cell-output-images" }, cell.images.map((img, i2) => /* @__PURE__ */ import_react.default.createElement("img", { key: i2, src: img.startsWith("data:") ? img : `data:image/png;base64,${img}`, alt: `Image ${i2 + 1}`, className: "cell-output-image" })))));
@@ -46988,18 +46991,20 @@
   });
 
   // src/frontend/components/Notebook.jsx
-  function Notebook({ cells, activeCellId, onCellSelect, onCellUpdate, onCellExecute, onCellDelete, onCellAdd }) {
+  function Notebook({ cells, activeCellId, runningCellId, onCellSelect, onCellUpdate, onCellExecute, onCellDelete, onCellAdd, onCellInterrupt }) {
     return /* @__PURE__ */ import_react2.default.createElement("div", { className: "notebook" }, cells.map((cell, i2) => /* @__PURE__ */ import_react2.default.createElement(
       Cell,
       {
         key: cell.id,
         cell,
         selected: cell.id === activeCellId,
+        isRunning: cell.id === runningCellId,
         index: i2,
         onSelect: () => onCellSelect(cell.id),
         onUpdate: (content2, type) => onCellUpdate(cell.id, content2, type),
         onExecute: () => onCellExecute(cell.id),
         onDelete: () => onCellDelete(cell.id),
+        onInterrupt: onCellInterrupt,
         onAddBefore: (type) => onCellAdd(type, i2),
         onAddAfter: (type) => onCellAdd(type, i2 + 1)
       }
@@ -48756,6 +48761,8 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     const [streamingMessage, setStreamingMessage] = (0, import_react6.useState)("");
     const [isThinking, setIsThinking] = (0, import_react6.useState)(false);
     const [agentStatus, setAgentStatus] = (0, import_react6.useState)("");
+    const [runningCellId, setRunningCellId] = (0, import_react6.useState)(null);
+    const cellDoneCallbacks = (0, import_react6.useRef)({});
     (0, import_react6.useEffect)(() => {
       const p = import_providers2.PROVIDERS[provider];
       if (p) setModel(p.defaultModel);
@@ -48875,12 +48882,6 @@ Please report this to https://github.com/markedjs/marked.`, e) {
       setCells((prev) => prev.map((c) => c.id === cellId ? { ...c, content: content2, type: type || c.type } : c));
       send("cell:update", { cellId, content: content2, type });
     }, [send]);
-    const handleCellExecute = (0, import_react6.useCallback)((cellId) => {
-      const cell = cells.find((c) => c.id === cellId);
-      if (!cell) return;
-      setCells((prev) => prev.map((c) => c.id === cellId ? { ...c, output: null, executionCount: null, error: null } : c));
-      send("cell:execute", { cellId, code: cell.content });
-    }, [cells, send]);
     const handleCellDelete = (0, import_react6.useCallback)((cellId) => {
       setCells((prev) => {
         const next = prev.filter((c) => c.id !== cellId);
@@ -48900,12 +48901,49 @@ Please report this to https://github.com/markedjs/marked.`, e) {
       setActiveCellId(newCell.id);
       send("cell:add", { type, index });
     }, [send]);
-    const handleRunAll = (0, import_react6.useCallback)(() => {
-      cells.forEach((c) => {
-        if (c.type === "code" && c.content.trim()) {
-          send("cell:execute", { cellId: c.id, code: c.content });
+    const handleCellExecute = (0, import_react6.useCallback)(async (cellId) => {
+      const cell = cells.find((c) => c.id === cellId);
+      if (!cell) return;
+      setRunningCellId(cellId);
+      setCells((prev) => prev.map(
+        (c) => c.id === cellId ? { ...c, output: null, executionCount: null, error: null } : c
+      ));
+      send("cell:execute", { cellId, code: cell.content });
+    }, [cells, send]);
+    const handleRunAll = (0, import_react6.useCallback)(async () => {
+      if (!cells.length) return;
+      let runningCount = 0;
+      const runNext = async (index) => {
+        if (index >= cells.length) {
+          setRunningCellId(null);
+          return;
         }
-      });
+        const cell = cells[index];
+        if (cell.type === "code" && cell.content.trim()) {
+          setRunningCellId(cell.id);
+          setCells((prev) => prev.map(
+            (c) => c.id === cell.id ? { ...c, output: null, executionCount: null, error: null } : c
+          ));
+          send("cell:execute", { cellId: cell.id, code: cell.content });
+          await new Promise((resolve) => {
+            const check = () => {
+              const c = cells.find((c2) => c2.id === cell.id);
+              if (c && (c.output !== null || c.error === true)) {
+                resolve();
+              } else {
+                setTimeout(check, 100);
+              }
+            };
+            check();
+          });
+          setTimeout(() => {
+            runNext(index + 1);
+          }, 500);
+        } else {
+          runNext(index + 1);
+        }
+      };
+      runNext(0);
     }, [cells, send]);
     const handleRunSelected = (0, import_react6.useCallback)(() => {
       if (activeCellId) handleCellExecute(activeCellId);
@@ -49072,11 +49110,13 @@ Please report this to https://github.com/markedjs/marked.`, e) {
       {
         cells,
         activeCellId,
+        runningCellId,
         onCellSelect: setActiveCellId,
         onCellUpdate: handleCellUpdate,
         onCellExecute: handleCellExecute,
         onCellDelete: handleCellDelete,
-        onCellAdd: handleCellAdd
+        onCellAdd: handleCellAdd,
+        onCellInterrupt: () => send("kernel:interrupt")
       }
     ), showChatSidebar && /* @__PURE__ */ import_react6.default.createElement(
       ChatSidebar,

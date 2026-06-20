@@ -136,7 +136,8 @@ function startServer(port) {
                         images: result.images || [],
                         done: true,
                     }));
-                    return { output: result.output, error: result.error };
+                    const toolOutput = result.output || (result.error ? '' : 'Success');
+                    return { output: toolOutput, error: result.error };
                 }
 
                 case 'create_cell': {
@@ -257,7 +258,8 @@ function startServer(port) {
             notebookCells = msg.cells.map(c => ({ ...c }));
         }
 
-        const executeTool = makeToolExecutor(ws);
+        const requestAbortControllers = new Map();
+        const executeTool = makeToolExecutor(ws, requestAbortControllers);
 
         let baseUrl = provider.baseUrl;
         if (providerId === 'cloudflare') {

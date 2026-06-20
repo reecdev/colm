@@ -154,8 +154,6 @@ def execute_code(source):
     output = err_writer.getvalue() if error else out_writer.getvalue()
     if error and not output:
         output = "Execution interrupted"
-    elif not error and not output:
-        output = "Success"
 
     return {
         "output": output,

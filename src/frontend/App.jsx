@@ -55,6 +55,8 @@ export default function App() {
   const [streamingMessage, setStreamingMessage] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const [agentStatus, setAgentStatus] = useState('');
+  const [runningCellId, setRunningCellId] = useState(null);
+  const cellDoneCallbacks = useRef({});
 
   // Reset model when provider changes
   useEffect(() => {
@@ -189,13 +191,6 @@ export default function App() {
     send('cell:update', { cellId, content, type });
   }, [send]);
 
-  const handleCellExecute = useCallback((cellId) => {
-    const cell = cells.find(c => c.id === cellId);
-    if (!cell) return;
-    setCells(prev => prev.map(c => c.id === cellId ? { ...c, output: null, executionCount: null, error: null } : c));
-    send('cell:execute', { cellId, code: cell.content });
-  }, [cells, send]);
-
   const handleCellDelete = useCallback((cellId) => {
     setCells(prev => {
       const next = prev.filter(c => c.id !== cellId);
@@ -217,13 +212,59 @@ export default function App() {
     send('cell:add', { type, index });
   }, [send]);
 
-  const handleRunAll = useCallback(() => {
-    cells.forEach(c => {
-      if (c.type === 'code' && c.content.trim()) {
-        send('cell:execute', { cellId: c.id, code: c.content });
-      }
-    });
-  }, [cells, send]);
+    const handleCellExecute = useCallback(async (cellId) => {
+      const cell = cells.find(c => c.id === cellId);
+      if (!cell) return;
+
+      setRunningCellId(cellId);
+      setCells(prev => prev.map(c =>
+        c.id === cellId ? { ...c, output: null, executionCount: null, error: null } : c
+      ));
+      send('cell:execute', { cellId, code: cell.content });
+    }, [cells, send]);
+
+    const handleRunAll = useCallback(async () => {
+      if (!cells.length) return;
+
+      let runningCount = 0;
+      const runNext = async (index) => {
+        if (index >= cells.length) {
+          setRunningCellId(null);
+          return;
+        }
+
+        const cell = cells[index];
+        if (cell.type === 'code' && cell.content.trim()) {
+          setRunningCellId(cell.id);
+          setCells(prev => prev.map(c =>
+            c.id === cell.id ? { ...c, output: null, executionCount: null, error: null } : c
+          ));
+          send('cell:execute', { cellId: cell.id, code: cell.content });
+
+          // Wait for this cell to complete before running the next
+          await new Promise(resolve => {
+            const check = () => {
+              const c = cells.find(c => c.id === cell.id);
+              if (c && (c.output !== null || c.error === true)) {
+                resolve();
+              } else {
+                setTimeout(check, 100);
+              }
+            };
+            check();
+          });
+
+          // Small delay between cells
+          setTimeout(() => {
+            runNext(index + 1);
+          }, 500);
+        } else {
+          runNext(index + 1);
+        }
+      };
+
+      runNext(0);
+    }, [cells, send]);
 
   const handleRunSelected = useCallback(() => {
     if (activeCellId) handleCellExecute(activeCellId);
@@ -399,11 +440,13 @@ export default function App() {
         <Notebook
           cells={cells}
           activeCellId={activeCellId}
+          runningCellId={runningCellId}
           onCellSelect={setActiveCellId}
           onCellUpdate={handleCellUpdate}
           onCellExecute={handleCellExecute}
           onCellDelete={handleCellDelete}
           onCellAdd={handleCellAdd}
+          onCellInterrupt={() => send('kernel:interrupt')}
         />
         {showChatSidebar && (
           <ChatSidebar
