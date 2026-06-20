@@ -48860,6 +48860,9 @@ Please report this to https://github.com/markedjs/marked.`, e) {
               return copy;
             });
             break;
+          case "cell:started":
+            setRunningCellId(msg.cellId);
+            break;
           case "cell:update":
             setCells((prev) => prev.map((c) => c.id === msg.cellId ? { ...c, content: msg.content !== void 0 ? msg.content : c.content } : c));
             break;

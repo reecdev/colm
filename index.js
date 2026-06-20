@@ -112,8 +112,13 @@ function startServer(port) {
             switch (name) {
                 case 'run_cell': {
                     ws.send(JSON.stringify({ type: 'agent:status', status: `Running ${args.cellId}...` }));
+                    ws.send(JSON.stringify({ type: 'cell:started', cellId: args.cellId }));
                     const cell = notebookCells.find(c => c.id === args.cellId);
                     if (!cell) return { error: `Cell ${args.cellId} not found` };
+                    if (cell.type === 'markdown') {
+                        ws.send(JSON.stringify({ type: 'agent:status', status: 'Contemplating...' }));
+                        return { error: "Cannot execute markdown cells. Please use code cells for execution." };
+                    }
                     const onRunOutput = (token) => {
                         ws.send(JSON.stringify({
                             type: 'cell:output',
@@ -136,6 +141,7 @@ function startServer(port) {
                         images: result.images || [],
                         done: true,
                     }));
+                    ws.send(JSON.stringify({ type: 'agent:status', status: 'Contemplating...' }));
                     const toolOutput = result.output || (result.error ? '' : 'Success');
                     return { output: toolOutput, error: result.error };
                 }

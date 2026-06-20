@@ -148,23 +148,26 @@ export default function App() {
         case 'agent:status':
           setAgentStatus(msg.status || '');
           break;
-        case 'cell:add':
-          setCells(prev => {
-            let idx;
-            if (msg.index !== undefined && msg.index !== null) {
-              idx = Math.min(msg.index, prev.length);
-            } else {
-              idx = prev.length;
-            }
-            const newCell = { id: msg.cellId, type: msg.cellType || 'code', content: msg.content || '', output: null, executionCount: null, error: null };
-            const copy = [...prev];
-            copy.splice(idx, 0, newCell);
-            return copy;
-          });
-          break;
-        case 'cell:update':
-          setCells(prev => prev.map(c => c.id === msg.cellId ? { ...c, content: msg.content !== undefined ? msg.content : c.content } : c));
-          break;
+         case 'cell:add':
+           setCells(prev => {
+             let idx;
+             if (msg.index !== undefined && msg.index !== null) {
+               idx = Math.min(msg.index, prev.length);
+             } else {
+               idx = prev.length;
+             }
+             const newCell = { id: msg.cellId, type: msg.cellType || 'code', content: msg.content || '', output: null, executionCount: null, error: null };
+             const copy = [...prev];
+             copy.splice(idx, 0, newCell);
+             return copy;
+           });
+           break;
+         case 'cell:started':
+           setRunningCellId(msg.cellId);
+           break;
+         case 'cell:update':
+           setCells(prev => prev.map(c => c.id === msg.cellId ? { ...c, content: msg.content !== undefined ? msg.content : c.content } : c));
+           break;
         case 'cell:delete':
           setCells(prev => {
             const next = prev.filter(c => c.id !== msg.cellId);
