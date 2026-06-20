@@ -145,6 +145,8 @@ async function apiPost(body, sendStatus, signal) {
   const url = `${body.baseUrl}/chat/completions`;
 
   for (let attempt = 0; attempt < 3; attempt++) {
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -171,8 +173,27 @@ async function apiPost(body, sendStatus, signal) {
         } catch {}
       }
       seconds = Math.max(seconds, 1);
+
       if (sendStatus) sendStatus(`Throttled, resuming in ${seconds}s`);
-      await new Promise(r => setTimeout(r, seconds * 1000));
+
+      // Countdown sleep that respects abort signal
+      for (let remaining = seconds; remaining > 0; remaining--) {
+        if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+        await new Promise((resolve, reject) => {
+          const timer = setTimeout(resolve, 1000);
+          if (signal) {
+            signal.addEventListener('abort', () => {
+              clearTimeout(timer);
+              reject(new DOMException('Aborted', 'AbortError'));
+            }, { once: true });
+          }
+        });
+        if (remaining > 1 && sendStatus) {
+          sendStatus(`Throttled, resuming in ${remaining - 1}s`);
+        }
+      }
+
+      if (sendStatus) sendStatus('');
       continue;
     }
 
@@ -235,6 +256,7 @@ async function* streamChat(userText, history, model, apiKey, executeTool, baseUr
         },
       }, sendStatus, signal);
     } catch (err) {
+      if (err.name === 'AbortError') throw err;
       // If tool calling fails, fall back to plain streaming
       if (round === 0) {
         const fallback = await apiPost({
@@ -324,7 +346,7 @@ async function* streamChat(userText, history, model, apiKey, executeTool, baseUr
       stream: true,
       max_tokens: 4096,
     },
-  }, sendStatus);
+  }, sendStatus, signal);
   yield* streamTokens(streamResponse);
 }
 
